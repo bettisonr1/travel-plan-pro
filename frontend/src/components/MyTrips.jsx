@@ -16,6 +16,7 @@ const MyTrips = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isManageUsersModalOpen, setIsManageUsersModalOpen] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [activeTab, setActiveTab] = useState('upcoming');
 
   const fetchTrips = async () => {
     try {
@@ -74,6 +75,20 @@ const MyTrips = () => {
       }
   };
 
+  // Filter and sort trips
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
+  const upcomingTrips = trips
+    .filter(trip => new Date(trip.endDate) >= now)
+    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+  const pastTrips = trips
+    .filter(trip => new Date(trip.endDate) < now)
+    .sort((a, b) => new Date(b.startDate) - new Date(a.startDate)); // Most recent past trip first
+
+  const displayedTrips = activeTab === 'upcoming' ? upcomingTrips : pastTrips;
+
   if (loading && trips.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -99,60 +114,99 @@ const MyTrips = () => {
         </div>
       )}
 
-      {trips.length === 0 ? (
-        <Card className="text-center py-12">
-          <p className="text-gray-500 text-lg">No trips found. Start planning your first adventure!</p>
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            variant="outline"
-            className="mt-4"
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('upcoming')}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+              ${activeTab === 'upcoming'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+            `}
           >
-            Create Your First Trip
-          </Button>
+            Trips
+          </button>
+          <button
+            onClick={() => setActiveTab('past')}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+              ${activeTab === 'past'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+            `}
+          >
+            Past Trips
+          </button>
+        </nav>
+      </div>
+
+      {displayedTrips.length === 0 ? (
+        <Card className="text-center py-12">
+          <p className="text-gray-500 text-lg">
+            {activeTab === 'upcoming' 
+              ? "No upcoming trips. Start planning your next adventure!" 
+              : "No past trips found."}
+          </p>
+          {activeTab === 'upcoming' && (
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              variant="outline"
+              className="mt-4"
+            >
+              Create Your First Trip
+            </Button>
+          )}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {trips.map((trip) => (
-            <Card
-              key={trip._id}
-              title={trip.destination}
-              footer={
-                <div className="flex justify-between items-center w-full">
-                  <div className="text-sm text-gray-500">
-                    Created on {new Date(trip.createdAt).toLocaleDateString()}
-                  </div>
-                  <AvatarGroup 
-                    users={trip.users} 
-                    onClick={() => {
-                      setSelectedTrip(trip);
-                      setIsManageUsersModalOpen(true);
-                    }}
-                  />
-                </div>
-              }
-            >
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center text-gray-600">
-                    <span className="font-semibold mr-2">Dates:</span>
-                    {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
-                  </div>
-                  {trip.description && (
-                    <p className="text-gray-600 italic">
-                      "{trip.description}"
-                    </p>
-                  )}
-                </div>
-                <Button 
-                  onClick={() => navigate(`/trips/${trip._id}`)} 
-                  variant="outline" 
-                  className="w-full text-sm"
+        <div className="bg-white shadow overflow-hidden sm:rounded-md">
+          <ul className="divide-y divide-gray-200">
+            {displayedTrips.map((trip) => (
+              <li key={trip._id}>
+                <div 
+                  className="block hover:bg-gray-50 cursor-pointer transition duration-150 ease-in-out"
+                  onClick={() => navigate(`/trips/${trip._id}`)}
                 >
-                  View Details
-                </Button>
-              </div>
-            </Card>
-          ))}
+                  <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
+                    <div className="flex items-center truncate">
+                      <div className="flex-shrink-0 mr-4">
+                        {/* Location Icon or similar */}
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                      </div>
+                      <div className="truncate">
+                        <p className="text-lg font-medium text-blue-600 truncate">{trip.destination}</p>
+                        <p className="text-sm text-gray-500">
+                           {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                       <div className="mr-4">
+                           <AvatarGroup 
+                             users={trip.users} 
+                             onClick={() => {
+                               setSelectedTrip(trip); 
+                               setIsManageUsersModalOpen(true);
+                             }}
+                           />
+                       </div>
+                       <div>
+                           <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                               <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                           </svg>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
