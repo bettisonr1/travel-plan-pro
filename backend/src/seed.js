@@ -2,9 +2,25 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const Trip = require('./models/Trip');
 const Item = require('./models/Item');
+const User = require('./models/User');
 
 // Load env vars
 dotenv.config();
+
+const users = [
+  {
+    firstname: 'John',
+    lastname: 'Doe',
+    email: 'john@example.com',
+    password: 'password123',
+  },
+  {
+    firstname: 'Jane',
+    lastname: 'Smith',
+    email: 'jane@example.com',
+    password: 'password123',
+  },
+];
 
 const trips = [
   {
@@ -50,10 +66,19 @@ const seedData = async () => {
     // Clear existing data
     await Trip.deleteMany();
     await Item.deleteMany();
+    await User.deleteMany();
     console.log('Cleared existing data.');
 
-    // Insert trips
-    await Trip.insertMany(trips);
+    // Insert users
+    const createdUsers = await User.create(users);
+    console.log('Inserted test users.');
+
+    // Insert trips with user associations
+    const tripsWithUsers = trips.map((trip, index) => ({
+      ...trip,
+      users: [createdUsers[index % createdUsers.length]._id],
+    }));
+    await Trip.insertMany(tripsWithUsers);
     console.log('Inserted test trips.');
 
     // Insert items

@@ -1,8 +1,8 @@
 const TripRepository = require('../repositories/TripRepository');
 
 class TripService {
-  async getAllTrips() {
-    return await TripRepository.findAll();
+  async getAllTrips(userId) {
+    return await TripRepository.findAll(userId);
   }
 
   async getTripById(id) {
@@ -27,6 +27,22 @@ class TripService {
 
   async deleteTrip(id) {
     const trip = await TripRepository.delete(id);
+    if (!trip) {
+      throw new Error('Trip not found');
+    }
+    return trip;
+  }
+
+  async addUserToTrip(tripId, userId) {
+    const trip = await TripRepository.addUserToTrip(tripId, userId);
+    if (!trip) {
+      throw new Error('Trip not found');
+    }
+    return trip;
+  }
+
+  async removeUserFromTrip(tripId, userId) {
+    const trip = await TripRepository.removeUserFromTrip(tripId, userId);
     if (!trip) {
       throw new Error('Trip not found');
     }
