@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import tripService from '../services/tripService';
 import Card from './Card';
 import Button from './Button';
@@ -7,6 +8,7 @@ import ManageUsersModal from './ManageUsersModal';
 import AvatarGroup from './AvatarGroup';
 
 const MyTrips = () => {
+  const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -126,16 +128,25 @@ const MyTrips = () => {
                 </div>
               }
             >
-              <div className="space-y-2">
-                <div className="flex items-center text-gray-600">
-                  <span className="font-semibold mr-2">Dates:</span>
-                  {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center text-gray-600">
+                    <span className="font-semibold mr-2">Dates:</span>
+                    {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+                  </div>
+                  {trip.description && (
+                    <p className="text-gray-600 italic">
+                      "{trip.description}"
+                    </p>
+                  )}
                 </div>
-                {trip.description && (
-                  <p className="text-gray-600 italic">
-                    "{trip.description}"
-                  </p>
-                )}
+                <Button 
+                  onClick={() => navigate(`/trips/${trip._id}`)} 
+                  variant="outline" 
+                  className="w-full text-sm"
+                >
+                  View Details
+                </Button>
               </div>
             </Card>
           ))}
