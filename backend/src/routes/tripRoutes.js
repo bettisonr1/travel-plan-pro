@@ -11,5 +11,6 @@ router.post('/', (req, res) => TripController.createTrip(req, res));
 router.put('/:id', (req, res) => TripController.updateTrip(req, res));
 router.delete('/:id', (req, res) => TripController.deleteTrip(req, res));
 router.post('/:id/users', (req, res) => TripController.addUser(req, res));
+router.delete('/:id/users/:userId', (req, res) => TripController.removeUser(req, res));
 
 module.exports = router;

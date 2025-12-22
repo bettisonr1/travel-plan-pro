@@ -16,6 +16,17 @@ class UserRepository {
   async findAll() {
     return await User.find();
   }
+
+  async search(query) {
+    const regex = new RegExp(query, 'i');
+    return await User.find({
+      $or: [
+        { firstname: regex },
+        { lastname: regex },
+        { email: regex }
+      ]
+    });
+  }
 }
 
 module.exports = new UserRepository();

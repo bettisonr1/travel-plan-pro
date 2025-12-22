@@ -3,24 +3,25 @@ const Trip = require('../models/Trip');
 class TripRepository {
   async findAll(userId) {
     if (userId) {
-      return await Trip.find({ users: userId });
+      return await Trip.find({ users: userId }).populate('users', 'firstname lastname email');
     }
-    return await Trip.find();
+    return await Trip.find().populate('users', 'firstname lastname email');
   }
 
   async findById(id) {
-    return await Trip.findById(id);
+    return await Trip.findById(id).populate('users', 'firstname lastname email');
   }
 
   async create(data) {
-    return await Trip.create(data);
+    const trip = await Trip.create(data);
+    return await trip.populate('users', 'firstname lastname email');
   }
 
   async update(id, data) {
     return await Trip.findByIdAndUpdate(id, data, {
       new: true,
       runValidators: true,
-    });
+    }).populate('users', 'firstname lastname email');
   }
 
   async delete(id) {
@@ -32,7 +33,15 @@ class TripRepository {
       tripId,
       { $addToSet: { users: userId } },
       { new: true }
-    );
+    ).populate('users', 'firstname lastname email');
+  }
+
+  async removeUserFromTrip(tripId, userId) {
+    return await Trip.findByIdAndUpdate(
+      tripId,
+      { $pull: { users: userId } },
+      { new: true }
+    ).populate('users', 'firstname lastname email');
   }
 }
 

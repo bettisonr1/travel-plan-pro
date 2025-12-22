@@ -30,6 +30,11 @@ const tripService = {
     const response = await api.post(`/trips/${tripId}/users`, { userId });
     return response.data;
   },
+
+  removeUser: async (tripId, userId) => {
+    const response = await api.delete(`/trips/${tripId}/users/${userId}`);
+    return response.data;
+  },
 };
 
 export default tripService;

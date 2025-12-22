@@ -40,6 +40,14 @@ class TripService {
     }
     return trip;
   }
+
+  async removeUserFromTrip(tripId, userId) {
+    const trip = await TripRepository.removeUserFromTrip(tripId, userId);
+    if (!trip) {
+      throw new Error('Trip not found');
+    }
+    return trip;
+  }
 }
 
 module.exports = new TripService();

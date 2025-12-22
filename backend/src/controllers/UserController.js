@@ -51,7 +51,13 @@ class UserController {
 
   async getUsers(req, res) {
     try {
-      const users = await UserService.getAllUsers();
+      const search = req.query.search;
+      let users;
+      if (search) {
+        users = await UserService.searchUsers(search);
+      } else {
+        users = await UserService.getAllUsers();
+      }
       res.status(200).json({ success: true, data: users });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });

@@ -3,15 +3,16 @@ import tripService from '../services/tripService';
 import Card from './Card';
 import Button from './Button';
 import TripModal from './TripModal';
-import AddUserModal from './AddUserModal';
+import ManageUsersModal from './ManageUsersModal';
+import AvatarGroup from './AvatarGroup';
 
 const MyTrips = () => {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
-  const [selectedTripId, setSelectedTripId] = useState(null);
+  const [isManageUsersModalOpen, setIsManageUsersModalOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
 
   const fetchTrips = async () => {
     try {
@@ -44,12 +45,30 @@ const MyTrips = () => {
 
   const handleAddUser = async (tripId, userId) => {
     try {
-      await tripService.addUser(tripId, userId);
-      alert('User added to trip successfully!');
+      const updatedTripResponse = await tripService.addUser(tripId, userId);
+      // Update local state to reflect changes immediately
+      setTrips(trips.map(t => t._id === tripId ? updatedTripResponse.data : t));
+      if (selectedTrip && selectedTrip._id === tripId) {
+          setSelectedTrip(updatedTripResponse.data);
+      }
     } catch (err) {
       console.error('Failed to add user to trip', err);
-      alert('Failed to add user to trip. Please try again.');
+      alert('Failed to add user. Please try again.');
     }
+  };
+
+  const handleRemoveUser = async (tripId, userId) => {
+      if (!window.confirm('Are you sure you want to remove this user?')) return;
+      try {
+        const updatedTripResponse = await tripService.removeUser(tripId, userId);
+        setTrips(trips.map(t => t._id === tripId ? updatedTripResponse.data : t));
+        if (selectedTrip && selectedTrip._id === tripId) {
+            setSelectedTrip(updatedTripResponse.data);
+        }
+      } catch (err) {
+        console.error('Failed to remove user from trip', err);
+        alert('Failed to remove user. Please try again.');
+      }
   };
 
   if (loading && trips.length === 0) {
@@ -97,16 +116,13 @@ const MyTrips = () => {
                   <div className="text-sm text-gray-500">
                     Created on {new Date(trip.createdAt).toLocaleDateString()}
                   </div>
-                  <Button
+                  <AvatarGroup 
+                    users={trip.users} 
                     onClick={() => {
-                      setSelectedTripId(trip._id);
-                      setIsAddUserModalOpen(true);
+                      setSelectedTrip(trip);
+                      setIsManageUsersModalOpen(true);
                     }}
-                    variant="outline"
-                    className="text-xs py-1 px-2"
-                  >
-                    Add User
-                  </Button>
+                  />
                 </div>
               }
             >
@@ -132,11 +148,12 @@ const MyTrips = () => {
         onSubmit={handleCreateTrip}
       />
 
-      <AddUserModal
-        isOpen={isAddUserModalOpen}
-        onClose={() => setIsAddUserModalOpen(false)}
+      <ManageUsersModal
+        isOpen={isManageUsersModalOpen}
+        onClose={() => setIsManageUsersModalOpen(false)}
+        trip={selectedTrip}
         onAddUser={handleAddUser}
-        tripId={selectedTripId}
+        onRemoveUser={handleRemoveUser}
       />
     </div>
   );

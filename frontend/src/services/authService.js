@@ -29,12 +29,18 @@ const getAllUsers = async () => {
   return response.data;
 };
 
+const searchUsers = async (query) => {
+  const response = await api.get(`/users?search=${query}`);
+  return response.data;
+};
+
 const authService = {
   login,
   register,
   logout,
   getCurrentUser,
   getAllUsers,
+  searchUsers,
 };
 
 export default authService;

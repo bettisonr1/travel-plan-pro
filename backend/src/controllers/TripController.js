@@ -60,6 +60,17 @@ class TripController {
       res.status(status).json({ success: false, error: error.message });
     }
   }
+
+  async removeUser(req, res) {
+    try {
+      const { userId } = req.params;
+      const trip = await TripService.removeUserFromTrip(req.params.id, userId);
+      res.status(200).json({ success: true, data: trip });
+    } catch (error) {
+      const status = error.message === 'Trip not found' ? 404 : 500;
+      res.status(status).json({ success: false, error: error.message });
+    }
+  }
 }
 
 module.exports = new TripController();
