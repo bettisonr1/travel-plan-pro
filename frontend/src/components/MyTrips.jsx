@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import tripService from '../services/tripService';
+import InteractiveTripCalendar from './InteractiveTripCalendar';
 import Card from './Card';
 import Button from './Button';
 import TripModal from './TripModal';
@@ -87,6 +88,8 @@ const MyTrips = () => {
           New Trip
         </Button>
       </div>
+
+      {trips.length > 0 && <InteractiveTripCalendar trips={trips} />}
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
