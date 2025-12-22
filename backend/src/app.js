@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const itemRoutes = require('./routes/itemRoutes');
 const tripRoutes = require('./routes/tripRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 // Load env vars
 dotenv.config();
@@ -18,6 +19,7 @@ app.use(cors());
 // Routes
 app.use('/api/items', itemRoutes);
 app.use('/api/trips', tripRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

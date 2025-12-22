@@ -3,12 +3,15 @@ import tripService from '../services/tripService';
 import Card from './Card';
 import Button from './Button';
 import TripModal from './TripModal';
+import AddUserModal from './AddUserModal';
 
 const MyTrips = () => {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [selectedTripId, setSelectedTripId] = useState(null);
 
   const fetchTrips = async () => {
     try {
@@ -36,6 +39,16 @@ const MyTrips = () => {
     } catch (err) {
       console.error('Failed to create trip', err);
       alert('Failed to create trip. Please try again.');
+    }
+  };
+
+  const handleAddUser = async (tripId, userId) => {
+    try {
+      await tripService.addUser(tripId, userId);
+      alert('User added to trip successfully!');
+    } catch (err) {
+      console.error('Failed to add user to trip', err);
+      alert('Failed to add user to trip. Please try again.');
     }
   };
 
@@ -80,8 +93,20 @@ const MyTrips = () => {
               key={trip._id}
               title={trip.destination}
               footer={
-                <div className="text-sm text-gray-500">
-                  Created on {new Date(trip.createdAt).toLocaleDateString()}
+                <div className="flex justify-between items-center w-full">
+                  <div className="text-sm text-gray-500">
+                    Created on {new Date(trip.createdAt).toLocaleDateString()}
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setSelectedTripId(trip._id);
+                      setIsAddUserModalOpen(true);
+                    }}
+                    variant="outline"
+                    className="text-xs py-1 px-2"
+                  >
+                    Add User
+                  </Button>
                 </div>
               }
             >
@@ -105,6 +130,13 @@ const MyTrips = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateTrip}
+      />
+
+      <AddUserModal
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+        onAddUser={handleAddUser}
+        tripId={selectedTripId}
       />
     </div>
   );

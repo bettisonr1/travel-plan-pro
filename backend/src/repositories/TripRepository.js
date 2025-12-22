@@ -1,7 +1,10 @@
 const Trip = require('../models/Trip');
 
 class TripRepository {
-  async findAll() {
+  async findAll(userId) {
+    if (userId) {
+      return await Trip.find({ users: userId });
+    }
     return await Trip.find();
   }
 
@@ -22,6 +25,14 @@ class TripRepository {
 
   async delete(id) {
     return await Trip.findByIdAndDelete(id);
+  }
+
+  async addUserToTrip(tripId, userId) {
+    return await Trip.findByIdAndUpdate(
+      tripId,
+      { $addToSet: { users: userId } },
+      { new: true }
+    );
   }
 }
 
