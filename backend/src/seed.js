@@ -41,6 +41,24 @@ const trips = [
     endDate: new Date('2025-01-12'),
     description: 'Broadway shows, Central Park walks, and plenty of pizza.',
   },
+  {
+    destination: 'London, UK',
+    startDate: new Date('2026-03-10'),
+    endDate: new Date('2026-03-17'),
+    description: 'Visiting the British Museum and enjoying afternoon tea.',
+  },
+  {
+    destination: 'Rome, Italy',
+    startDate: new Date('2026-06-20'),
+    endDate: new Date('2026-06-30'),
+    description: 'Exploring the Colosseum and Vatican City.',
+  },
+  {
+    destination: 'Sydney, Australia',
+    startDate: new Date('2026-12-15'),
+    endDate: new Date('2026-12-28'),
+    description: 'Summer Christmas by the beach and fireworks at the harbour.',
+  },
 ];
 
 const items = [

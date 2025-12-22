@@ -6,6 +6,7 @@ class TripController {
       const trips = await TripService.getAllTrips(req.user.id);
       res.status(200).json({ success: true, data: trips });
     } catch (error) {
+      console.error('Error in getTrips:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }
