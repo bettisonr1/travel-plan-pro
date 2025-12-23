@@ -7,6 +7,7 @@ import Button from './Button';
 import TripModal from './TripModal';
 import ManageUsersModal from './ManageUsersModal';
 import AvatarGroup from './AvatarGroup';
+import PlanMode from './PlanMode';
 
 const MyTrips = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const MyTrips = () => {
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isManageUsersModalOpen, setIsManageUsersModalOpen] = useState(false);
+  const [showPlanMode, setShowPlanMode] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [activeTab, setActiveTab] = useState('upcoming');
 
@@ -101,9 +103,14 @@ const MyTrips = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">My Trips</h2>
-        <Button onClick={() => setIsModalOpen(true)} variant="primary">
-          New Trip
-        </Button>
+        <div className="flex gap-2">
+            <Button onClick={() => setShowPlanMode(true)} variant="secondary">
+              Plan Mode
+            </Button>
+            <Button onClick={() => setIsModalOpen(true)} variant="primary">
+              New Trip
+            </Button>
+        </div>
       </div>
 
       {trips.length > 0 && <InteractiveTripCalendar trips={trips} />}
@@ -223,6 +230,8 @@ const MyTrips = () => {
         onAddUser={handleAddUser}
         onRemoveUser={handleRemoveUser}
       />
+      
+      {showPlanMode && <PlanMode onClose={() => setShowPlanMode(false)} />}
     </div>
   );
 };
