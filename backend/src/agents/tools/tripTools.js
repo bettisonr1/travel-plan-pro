@@ -2,6 +2,10 @@ const { tool } = require("@langchain/core/tools");
 const { z } = require("zod");
 const Trip = require("../../models/Trip");
 
+/**
+ * Search for trips in the database based on a query string.
+ * This tool is useful when the user wants to find information about existing trips.
+ */
 const searchTrips = tool(
   async ({ query }) => {
     try {
@@ -18,13 +22,17 @@ const searchTrips = tool(
   },
   {
     name: "search_trips",
-    description: "Search for existing trips by destination or description",
+    description: "Search for existing trips in the database. Use this to find trips by destination name or description keywords. Returns a list of matching trips.",
     schema: z.object({
       query: z.string().describe("The search term to find trips"),
     }),
   }
 );
 
+/**
+ * Create a new trip in the database.
+ * This tool should be used when the user wants to add a new trip.
+ */
 const createTrip = tool(
   async ({ destination, startDate, endDate, description, userId }) => {
     try {
@@ -48,7 +56,7 @@ const createTrip = tool(
   },
   {
     name: "create_trip",
-    description: "Create a new trip with destination, dates, and description",
+    description: "Create a new trip record. Use this when the user provides details for a new trip such as destination and dates. Returns the created trip object.",
     schema: z.object({
       destination: z.string().describe("The destination of the trip"),
       startDate: z.string().describe("The start date of the trip (YYYY-MM-DD)"),
@@ -59,6 +67,10 @@ const createTrip = tool(
   }
 );
 
+/**
+ * Update an existing trip in the database.
+ * This tool is used to modify details of a trip like dates or destination.
+ */
 const updateTrip = tool(
   async ({ tripId, destination, startDate, endDate, description }) => {
     try {
@@ -81,7 +93,7 @@ const updateTrip = tool(
   },
   {
     name: "update_trip",
-    description: "Update an existing trip's details",
+    description: "Update an existing trip's details. Use this when the user wants to change the destination, dates, or description of a specific trip identified by tripId. Returns the updated trip.",
     schema: z.object({
       tripId: z.string().describe("The ID of the trip to update"),
       destination: z.string().optional().describe("The new destination"),
