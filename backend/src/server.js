@@ -25,13 +25,13 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('chat_message', async (data) => {
-    const { message, threadId } = data;
+    const { message, threadId, userId } = data;
     // Use provided threadId or socket.id
     const config = { configurable: { thread_id: threadId || socket.id } };
 
     try {
       const response = await travelAgent.invoke(
-        { messages: [new HumanMessage(message)] },
+        { messages: [new HumanMessage(message)], userId },
         config
       );
 

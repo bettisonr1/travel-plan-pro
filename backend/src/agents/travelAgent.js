@@ -1,4 +1,4 @@
-const { StateGraph, START, END } = require("@langchain/langgraph");
+const { StateGraph, START, END, MessagesAnnotation, Annotation } = require("@langchain/langgraph");
 const { ChatOpenAI } = require("@langchain/openai");
 const { SystemMessage } = require("@langchain/core/messages");
 const { ToolNode } = require("@langchain/langgraph/prebuilt");
@@ -6,13 +6,14 @@ const { searchTrips, createTrip, updateTrip } = require("./tools/tripTools");
 const { MongoClient } = require("mongodb");
 const { MongoDBSaver } = require("@langchain/langgraph-checkpoint-mongodb");
 
-// Define the state structure
-const agentState = {
-  messages: {
-    value: (x, y) => x.concat(y),
-    default: () => [],
+// Define the state structure using MessagesAnnotation and adding userId
+const GraphAnnotation = Annotation.Root({
+  ...MessagesAnnotation.spec,
+  userId: {
+    value: (x, y) => y ?? x,
+    default: () => undefined,
   }
-};
+});
 
 // Define the tools
 const tools = [searchTrips, createTrip, updateTrip];
@@ -25,9 +26,13 @@ const agentNode = async (state) => {
     modelName: "gpt-3.5-turbo",
   }).bindTools(tools);
 
-  const systemMessage = new SystemMessage(
-    "You are a helpful and knowledgeable travel agent. Your goal is to assist users with questions about travel destinations, itineraries, and tips. Be enthusiastic, provide detailed practical advice, and always consider the user's preferences if stated."
-  );
+  let systemContent = "You are a helpful and knowledgeable travel agent. Your goal is to assist users with questions about travel destinations, itineraries, and tips. Be enthusiastic, provide detailed practical advice, and always consider the user's preferences if stated.";
+  
+  if (state.userId) {
+    systemContent += ` You are assisting user with ID: ${state.userId}. When creating trips, pass this userId to the create_trip tool.`;
+  }
+
+  const systemMessage = new SystemMessage(systemContent);
 
   // Filter messages to avoid sending duplicate system messages or ensure order
   const messages = [systemMessage, ...state.messages];
@@ -57,7 +62,7 @@ const shouldContinue = (state) => {
 };
 
 // Create the graph
-const workflow = new StateGraph({ channels: agentState })
+const workflow = new StateGraph(GraphAnnotation)
   .addNode("agent", agentNode)
   .addNode("tools", toolsNode)
   .addNode("human", humanNode)
