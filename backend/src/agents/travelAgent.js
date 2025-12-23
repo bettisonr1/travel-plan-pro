@@ -1,7 +1,8 @@
 const { StateGraph, START, END } = require("@langchain/langgraph");
 const { ChatOpenAI } = require("@langchain/openai");
 const { SystemMessage } = require("@langchain/core/messages");
-const { MongoDBSaver } = require("./MongoDBSaver");
+const { MongoClient } = require("mongodb");
+const { MongoDBSaver } = require("@langchain/langgraph-checkpoint-mongodb");
 
 // Define the state structure
 const agentState = {
@@ -42,13 +43,16 @@ const workflow = new StateGraph({ channels: agentState })
   .addNode("agent", agentNode)
   .addNode("human", humanNode)
   .addEdge(START, "agent")
+  .addEdge("agent", "human")
   .addEdge("agent", END);
   // Note: 'human' node is added but not currently in the main flow. 
   // To make it active, we would route to it based on agent output.
   // For this task, we enable it and the infrastructure for it.
 
 // Initialize checkpointer
-const checkpointer = new MongoDBSaver();
+const client = new MongoClient(process.env.MONGODB_URI);
+client.connect().catch(err => console.error("MongoDB Client Error:", err));
+const checkpointer = new MongoDBSaver({ client });
 
 // Compile the graph with checkpointing and interrupt
 const travelAgent = workflow.compile({
