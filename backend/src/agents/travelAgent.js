@@ -1,6 +1,8 @@
 const { StateGraph, START, END } = require("@langchain/langgraph");
 const { ChatOpenAI } = require("@langchain/openai");
 const { SystemMessage } = require("@langchain/core/messages");
+const { ToolNode } = require("@langchain/langgraph/prebuilt");
+const { searchTrips, createTrip, updateTrip } = require("./tools/tripTools");
 const { MongoClient } = require("mongodb");
 const { MongoDBSaver } = require("@langchain/langgraph-checkpoint-mongodb");
 
@@ -12,12 +14,16 @@ const agentState = {
   }
 };
 
+// Define the tools
+const tools = [searchTrips, createTrip, updateTrip];
+const toolsNode = new ToolNode(tools);
+
 // Define the agent node
 const agentNode = async (state) => {
   const model = new ChatOpenAI({
     temperature: 0.7,
     modelName: "gpt-3.5-turbo",
-  });
+  }).bindTools(tools);
 
   const systemMessage = new SystemMessage(
     "You are a helpful and knowledgeable travel agent. Your goal is to assist users with questions about travel destinations, itineraries, and tips. Be enthusiastic, provide detailed practical advice, and always consider the user's preferences if stated."
@@ -38,19 +44,30 @@ const humanNode = async (state) => {
     return {};
 };
 
+// Define conditional edge logic
+const shouldContinue = (state) => {
+  const { messages } = state;
+  const lastMessage = messages[messages.length - 1];
+  // If the LLM makes a tool call, then we route to the "tools" node
+  if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+    return "tools";
+  }
+  // Otherwise, we go to the human node
+  return "human";
+};
+
 // Create the graph
 const workflow = new StateGraph({ channels: agentState })
   .addNode("agent", agentNode)
+  .addNode("tools", toolsNode)
   .addNode("human", humanNode)
   .addEdge(START, "agent")
-  .addEdge("agent", "human")
-  .addEdge("agent", END);
-  // Note: 'human' node is added but not currently in the main flow. 
-  // To make it active, we would route to it based on agent output.
-  // For this task, we enable it and the infrastructure for it.
+  .addConditionalEdges("agent", shouldContinue)
+  .addEdge("tools", "agent")
+  .addEdge("human", END);
 
 // Initialize checkpointer
-const client = new MongoClient(process.env.MONGODB_URI);
+const client = new MongoClient(process.env.MONGODB_URI || "mongodb://localhost:27017/travel-plan");
 client.connect().catch(err => console.error("MongoDB Client Error:", err));
 const checkpointer = new MongoDBSaver({ client });
 
