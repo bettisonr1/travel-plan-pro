@@ -177,14 +177,21 @@ const MyTrips = () => {
                 >
                   <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
                     <div className="flex items-center truncate">
-                      <div className="flex-shrink-0 mr-4">
-                        {/* Location Icon or similar */}
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                        </div>
+                      <div className="flex-shrink-0 mr-4 w-16 h-16 flex items-center justify-center">
+                        {trip.thumbnailUrl ? (
+                            <img 
+                              src={`http://localhost:5001${trip.thumbnailUrl}`} 
+                              alt={trip.destination} 
+                              className="h-16 w-16 rounded-lg object-cover"
+                            />
+                        ) : (
+                            <div className="h-16 w-16 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                        )}
                       </div>
                       <div className="truncate">
                         <p className="text-lg font-medium truncate" style={{ color: trip.color || '#2563EB' }}>{trip.destination}</p>
