@@ -41,6 +41,16 @@ const tripService = {
     return response.data;
   },
 
+  addMessage: async (tripId, text) => {
+    const response = await api.post(`/trips/${tripId}/messages`, { text });
+    return response.data;
+  },
+
+  toggleLikeMessage: async (tripId, messageId) => {
+    const response = await api.post(`/trips/${tripId}/messages/${messageId}/like`);
+    return response.data;
+  },
+  
   generateImage: async (data) => {
     const response = await api.post('/ai/generate-image', data);
     return response.data;

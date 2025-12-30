@@ -72,6 +72,35 @@ class TripController {
       res.status(status).json({ success: false, error: error.message });
     }
   }
+
+  async addMessage(req, res) {
+    try {
+      const { text } = req.body;
+      if (!text) {
+        return res.status(400).json({ success: false, error: 'Message text is required' });
+      }
+      const messageData = {
+        text,
+        user: req.user.id
+      };
+      const trip = await TripService.addMessage(req.params.id, messageData);
+      res.status(200).json({ success: true, data: trip });
+    } catch (error) {
+      const status = error.message === 'Trip not found' ? 404 : 500;
+      res.status(status).json({ success: false, error: error.message });
+    }
+  }
+
+  async toggleLikeMessage(req, res) {
+    try {
+      const { messageId } = req.params;
+      const trip = await TripService.toggleLikeMessage(req.params.id, messageId, req.user.id);
+      res.status(200).json({ success: true, data: trip });
+    } catch (error) {
+      const status = error.message.includes('not found') ? 404 : 500;
+      res.status(status).json({ success: false, error: error.message });
+    }
+  }
 }
 
 module.exports = new TripController();

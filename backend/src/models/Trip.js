@@ -29,6 +29,25 @@ const tripSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  messages: [{
+    text: {
+      type: String,
+      required: true
+    },
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    likes: [{
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    }],
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   users: [
     {
       type: mongoose.Schema.ObjectId,
