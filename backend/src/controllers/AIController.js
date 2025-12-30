@@ -16,19 +16,20 @@ exports.suggestTripDetails = async (req, res) => {
     });
 
     const systemPrompt = `You are a travel assistant. 
-Analyze the user's trip details and extract/refine information.
-
-Allowed Categories: ${CATEGORIES.join(', ')}.
-
-Return a JSON object with the following fields:
-- "destination": The refined destination name (e.g., "Paris" -> "Paris, France").
-- "description": A polished version of the user's description (keep it brief but engaging).
-- "startDate": The start date in YYYY-MM-DD format if mentioned, otherwise null.
-- "endDate": The end date in YYYY-MM-DD format if mentioned, otherwise null.
-- "categories": An array of strings containing relevant categories from the Allowed Categories list based on the destination and description.
-
-Output ONLY valid JSON.
-`;
+    Analyze the user's trip details and extract/refine information.
+    
+    Allowed Categories: ${CATEGORIES.join(', ')}.
+    
+    Return a JSON object with the following fields:
+    - "destination": The refined destination name (e.g., "Paris" -> "Paris, France").
+    - "description": A polished version of the user's description (keep it brief but engaging).
+    - "startDate": The start date in YYYY-MM-DD format if mentioned, otherwise null.
+    - "endDate": The end date in YYYY-MM-DD format if mentioned, otherwise null.
+    - "categories": An array of strings containing relevant categories from the Allowed Categories list based on the destination and description.
+    - "color": A hex color code (e.g., "#FF5733") that represents the vibe of the destination.
+    
+    Output ONLY valid JSON.
+    `;
 
     let userPrompt;
     if (freeformInput) {
@@ -60,7 +61,8 @@ Output ONLY valid JSON.
         description: result.description || description,
         categories: result.categories || [],
         startDate: result.startDate || startDate || '',
-        endDate: result.endDate || endDate || ''
+        endDate: result.endDate || endDate || '',
+        color: result.color || '#3B82F6'
       }
     });
 
