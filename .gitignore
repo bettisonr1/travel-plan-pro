@@ -32,4 +32,4 @@ yarn-error.log*
 *.sw?
 
 # local image uploads
-/public/uploads/
+/backend/public/uploads/
