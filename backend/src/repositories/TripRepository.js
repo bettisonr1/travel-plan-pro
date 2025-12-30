@@ -63,8 +63,16 @@ class TripRepository {
     const trip = await Trip.findById(tripId);
     if (!trip) return null;
 
+    if (!trip.messages || typeof trip.messages.id !== 'function') {
+      return null;
+    }
+
     const message = trip.messages.id(messageId);
     if (!message) return null;
+
+    if (!message.likes) {
+      message.likes = [];
+    }
 
     const likeIndex = message.likes.findIndex(id => id.toString() === userId.toString());
     if (likeIndex > -1) {
