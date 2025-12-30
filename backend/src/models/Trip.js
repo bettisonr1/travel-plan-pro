@@ -17,6 +17,10 @@ const tripSchema = new mongoose.Schema({
   description: {
     type: String,
   },
+  pointsOfInterest: {
+    type: [String],
+    default: []
+  },
   users: [
     {
       type: mongoose.Schema.ObjectId,
