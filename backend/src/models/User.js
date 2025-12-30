@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
     minlength: 6,
     select: false,
   },
+  avatarColor: {
+    type: String,
+    default: '#3B82F6', // Default blue-500
+  },
   createdAt: {
     type: Date,
     default: Date.now,

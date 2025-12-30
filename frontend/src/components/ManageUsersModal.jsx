@@ -54,7 +54,10 @@ const ManageUsersModal = ({ isOpen, onClose, trip, onAddUser, onRemoveUser }) =>
             {trip.users?.map(user => (
               <div key={user._id} className="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                  <div 
+                    className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                    style={{ backgroundColor: user.avatarColor || '#3B82F6' }}
+                  >
                     {user.firstname?.[0]}{user.lastname?.[0]}
                   </div>
                   <div>
