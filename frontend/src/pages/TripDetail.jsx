@@ -117,6 +117,12 @@ const TripDetail = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex justify-start">
+        <Button onClick={() => navigate('/')} variant="secondary">
+          Back to Trips
+        </Button>
+      </div>
+
       {trip.thumbnailUrl && (
           <div className="w-full h-64 rounded-xl overflow-hidden shadow-lg relative">
               <img 
@@ -131,10 +137,11 @@ const TripDetail = () => {
           </div>
       )}
 
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          {!trip.thumbnailUrl && <h1 className="text-3xl font-bold" style={{ color: trip.color || '#111827' }}>{trip.destination}</h1>}
-          {!trip.thumbnailUrl && (
+      {/* Header Section (Title + Generate Button) - Only shown if no thumbnail */ }
+      {!trip.thumbnailUrl && (
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-bold" style={{ color: trip.color || '#111827' }}>{trip.destination}</h1>
             <Button 
               onClick={handleGenerateThumbnail} 
               variant="secondary"
@@ -142,14 +149,9 @@ const TripDetail = () => {
             >
               {generatingImage ? 'Generating...' : 'Generate Thumbnail'}
             </Button>
-          )}
+          </div>
         </div>
-        {trip.thumbnailUrl && <div></div>} {/* Spacer if header is in hero image */}
-        
-        <Button onClick={() => navigate('/')} variant="secondary">
-          Back to Trips
-        </Button>
-      </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
