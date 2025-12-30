@@ -35,6 +35,10 @@ class UserService {
     return await UserRepository.search(query);
   }
 
+  async updateUser(id, updateData) {
+    return await UserRepository.update(id, updateData);
+  }
+
   generateToken(id) {
     return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
       expiresIn: '30d',

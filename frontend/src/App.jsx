@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import MyTrips from './components/MyTrips';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import TripDetail from './pages/TripDetail';
+import UserProfile from './pages/UserProfile';
 import authService from './services/authService';
 import Button from './components/Button';
 
@@ -13,14 +14,26 @@ const Layout = ({ children, user, onLogout }) => {
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <header className="mb-12 flex justify-between items-center">
-          <div className="flex-1"></div>
+          <div className="flex-1">
+             <Link to="/" className="text-gray-500 hover:text-gray-900 font-semibold">
+               &larr; Home
+             </Link>
+          </div>
           <div className="flex-1 text-center">
             <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
               Travel <span className="text-blue-600">Planner</span>
             </h1>
           </div>
           <div className="flex-1 flex justify-end items-center gap-4">
-            <span className="text-gray-600">Hi, {user.firstname}!</span>
+            <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity" title="Edit Profile">
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm"
+                style={{ backgroundColor: user.avatarColor || '#3B82F6' }}
+              >
+                {user.firstname?.[0]?.toUpperCase()}
+              </div>
+              <span className="text-gray-600 font-medium">Hi, {user.firstname}!</span>
+            </Link>
             <Button onClick={onLogout} variant="secondary" className="text-sm py-1 px-3">
               Logout
             </Button>
@@ -47,6 +60,10 @@ function AppContent() {
 
   const handleLogin = (userData) => {
     setUser(userData);
+  };
+
+  const handleUpdateUser = (updatedUser) => {
+    setUser(updatedUser);
   };
 
   const handleLogout = () => {
@@ -84,6 +101,14 @@ function AppContent() {
         <ProtectedRoute user={user}>
           <Layout user={user} onLogout={handleLogout}>
             <TripDetail />
+          </Layout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/profile" element={
+        <ProtectedRoute user={user}>
+          <Layout user={user} onLogout={handleLogout}>
+            <UserProfile user={user} onUpdate={handleUpdateUser} />
           </Layout>
         </ProtectedRoute>
       } />

@@ -27,6 +27,13 @@ class UserRepository {
       ]
     });
   }
+
+  async update(id, updateData) {
+    return await User.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true
+    });
+  }
 }
 
 module.exports = new UserRepository();
