@@ -12,6 +12,7 @@ class UserController {
           firstname: user.firstname,
           lastname: user.lastname,
           email: user.email,
+          avatarColor: user.avatarColor,
           token,
         },
       });
@@ -32,6 +33,7 @@ class UserController {
           firstname: user.firstname,
           lastname: user.lastname,
           email: user.email,
+          avatarColor: user.avatarColor,
           token,
         },
       });

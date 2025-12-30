@@ -21,7 +21,8 @@ const AvatarGroup = ({ users = [], max = 3, onClick }) => {
       {displayUsers.map((user) => (
         <div
           key={user._id}
-          className="h-8 w-8 rounded-full ring-2 ring-white bg-blue-500 flex items-center justify-center text-xs text-white font-medium leading-none"
+          className="h-8 w-8 rounded-full ring-2 ring-white flex items-center justify-center text-xs text-white font-medium leading-none"
+          style={{ backgroundColor: user.avatarColor || '#3B82F6' }}
           title={`${user.firstname} ${user.lastname}`}
         >
           {getInitials(user)}

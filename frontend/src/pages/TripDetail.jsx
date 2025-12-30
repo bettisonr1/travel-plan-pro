@@ -135,7 +135,10 @@ const TripDetail = () => {
             <div className="space-y-4">
               {trip.users && trip.users.map(user => (
                 <div key={user._id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                  <div 
+                    className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold"
+                    style={{ backgroundColor: user.avatarColor || '#3B82F6' }}
+                  >
                     {user.firstname?.[0]}{user.lastname?.[0]}
                   </div>
                   <div>

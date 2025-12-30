@@ -9,14 +9,30 @@ const Register = ({ onLogin }) => {
     lastname: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    avatarColor: '#3B82F6' // Default blue
   });
   const [error, setError] = useState('');
 
-  const { firstname, lastname, email, password, confirmPassword } = formData;
+  const { firstname, lastname, email, password, confirmPassword, avatarColor } = formData;
+
+  const colors = [
+    '#3B82F6', // Blue
+    '#EF4444', // Red
+    '#10B981', // Green
+    '#F59E0B', // Yellow
+    '#8B5CF6', // Purple
+    '#EC4899', // Pink
+    '#6366F1', // Indigo
+    '#F472B6', // Pink-400
+  ];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleColorSelect = (color) => {
+    setFormData({ ...formData, avatarColor: color });
   };
 
   const handleSubmit = async (e) => {
@@ -33,7 +49,8 @@ const Register = ({ onLogin }) => {
         firstname,
         lastname,
         email,
-        password
+        password,
+        avatarColor
       });
       if (data.success) {
         onLogin(data.data);
@@ -114,6 +131,24 @@ const Register = ({ onLogin }) => {
               minLength="6"
             />
           </div>
+
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Avatar Color</label>
+            <div className="flex flex-wrap gap-2">
+              {colors.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => handleColorSelect(color)}
+                  className={`w-8 h-8 rounded-full focus:outline-none ring-2 ring-offset-2 ${
+                    avatarColor === color ? 'ring-gray-400' : 'ring-transparent'
+                  }`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          </div>
+
           <Button type="submit" className="w-full">
             Register
           </Button>
@@ -133,4 +168,3 @@ const Register = ({ onLogin }) => {
 };
 
 export default Register;
-

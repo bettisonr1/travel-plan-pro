@@ -3,25 +3,25 @@ const Trip = require('../models/Trip');
 class TripRepository {
   async findAll(userId) {
     if (userId) {
-      return await Trip.find({ users: userId }).populate('users', 'firstname lastname email');
+      return await Trip.find({ users: userId }).populate('users', 'firstname lastname email avatarColor');
     }
-    return await Trip.find().populate('users', 'firstname lastname email');
+    return await Trip.find().populate('users', 'firstname lastname email avatarColor');
   }
 
   async findById(id) {
-    return await Trip.findById(id).populate('users', 'firstname lastname email');
+    return await Trip.findById(id).populate('users', 'firstname lastname email avatarColor');
   }
 
   async create(data) {
     const trip = await Trip.create(data);
-    return await trip.populate('users', 'firstname lastname email');
+    return await trip.populate('users', 'firstname lastname email avatarColor');
   }
 
   async update(id, data) {
     return await Trip.findByIdAndUpdate(id, data, {
       new: true,
       runValidators: true,
-    }).populate('users', 'firstname lastname email');
+    }).populate('users', 'firstname lastname email avatarColor');
   }
 
   async delete(id) {
@@ -33,7 +33,7 @@ class TripRepository {
       tripId,
       { $addToSet: { users: userId } },
       { new: true }
-    ).populate('users', 'firstname lastname email');
+    ).populate('users', 'firstname lastname email avatarColor');
   }
 
   async removeUserFromTrip(tripId, userId) {
@@ -41,7 +41,7 @@ class TripRepository {
       tripId,
       { $pull: { users: userId } },
       { new: true }
-    ).populate('users', 'firstname lastname email');
+    ).populate('users', 'firstname lastname email avatarColor');
   }
 }
 
