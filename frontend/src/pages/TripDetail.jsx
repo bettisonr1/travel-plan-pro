@@ -111,6 +111,86 @@ const TripDetail = () => {
     }
   };
 
+  const [researchState, setResearchState] = useState({
+    logs: [],
+    categories: [],
+    findings: [],
+    summary: '',
+    isResearching: false
+  });
+
+  const handleStartResearch = async () => {
+    setResearchState(prev => ({ ...prev, isResearching: true, logs: ['Starting research workflow...'], summary: '' }));
+    
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = user?.token;
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/trips/${trip._id}/research`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to start research');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            if (dataStr === '[DONE]') continue;
+            
+            try {
+              const data = JSON.parse(dataStr);
+              
+              // Handle different state updates from LangGraph
+              if (data.categories) {
+                setResearchState(prev => ({
+                  ...prev,
+                  categories: data.categories,
+                  logs: [...prev.logs, `identified categories: ${data.categories.join(', ')}`]
+                }));
+              }
+              
+              if (data.findings) {
+                 setResearchState(prev => ({
+                  ...prev,
+                  findings: [...prev.findings, ...data.findings],
+                  logs: [...prev.logs, `Research completed for a batch of categories`]
+                }));
+              }
+              
+              if (data.summary) {
+                setResearchState(prev => ({
+                  ...prev,
+                  summary: data.summary,
+                  logs: [...prev.logs, 'Summary generated!']
+                }));
+              }
+            } catch (e) {
+              console.error('Error parsing stream data', e);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Research error:', error);
+      setResearchState(prev => ({ ...prev, logs: [...prev.logs, `Error: ${error.message}`] }));
+    } finally {
+      setResearchState(prev => ({ ...prev, isResearching: false }));
+    }
+  };
+
   if (loading) return <div className="text-center py-10">Loading...</div>;
   if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
   if (!trip) return <div className="text-center py-10">Trip not found</div>;
@@ -238,40 +318,62 @@ const TripDetail = () => {
 
         {activeTab === 'deep-research' && (
           <div className="space-y-6">
-            <div className="flex justify-end">
-              <Button variant="primary">
-                Trigger Deep Research
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Deep Research Agent</h2>
+              <Button 
+                onClick={handleStartResearch} 
+                variant="primary"
+                disabled={researchState.isResearching}
+              >
+                {researchState.isResearching ? 'Researching...' : 'Start Deep Research'}
               </Button>
             </div>
-            <Card title="AI Trip Report">
-              <div className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
-                  <h4 className="text-blue-800 font-semibold mb-2">Generated Insights</h4>
-                  <p className="text-blue-600">
-                    This report is generated based on your destination and preferences. 
-                    (This is a placeholder for the future AI feature.)
-                  </p>
-                </div>
-                
-                <div className="prose max-w-none text-gray-700">
-                  <p>
-                    <strong>Summary:</strong> A wonderful trip to {trip.destination} awaits! 
-                    Expect great weather and amazing sights.
-                  </p>
-                  <p>
-                    <strong>Top Recommendations:</strong>
-                  </p>
-                  <ul className="list-disc pl-5">
-                    <li>Visit the main city square</li>
-                    <li>Try the local cuisine at rated restaurants</li>
-                    <li>Explore nearby nature trails</li>
-                  </ul>
-                  <p className="text-sm text-gray-500 mt-4">
-                    <em>Sources: Wikipedia, TripAdvisor, Local Guides</em>
-                  </p>
-                </div>
+
+            {/* Progress/Logs Area */}
+            {(researchState.logs.length > 0 || researchState.isResearching) && (
+              <Card>
+                 <div className="bg-gray-900 text-green-400 p-4 rounded-md font-mono text-sm h-48 overflow-y-auto">
+                    {researchState.logs.map((log, i) => (
+                      <div key={i}>&gt; {log}</div>
+                    ))}
+                    {researchState.isResearching && <div className="animate-pulse">&gt; _</div>}
+                 </div>
+              </Card>
+            )}
+
+            {/* Categories */}
+            {researchState.categories.length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {researchState.categories.map((cat, i) => (
+                   <span key={i} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                     {cat}
+                   </span>
+                ))}
               </div>
-            </Card>
+            )}
+
+            {/* Summary Result */}
+            {researchState.summary && (
+              <Card title="Executive Summary">
+                <div className="prose max-w-none text-gray-800 whitespace-pre-line">
+                  {researchState.summary}
+                </div>
+              </Card>
+            )}
+
+            {/* Detailed Findings (Accordion style or list) */}
+            {researchState.findings.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Detailed Findings</h3>
+                {researchState.findings.map((finding, i) => (
+                  <Card key={i}>
+                    <div className="whitespace-pre-line text-sm text-gray-700">
+                      {finding}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
