@@ -50,6 +50,11 @@ const tripService = {
     const response = await api.post(`/trips/${tripId}/messages/${messageId}/like`);
     return response.data;
   },
+  
+  generateImage: async (data) => {
+    const response = await api.post('/ai/generate-image', data);
+    return response.data;
+  },
 };
 
 export default tripService;

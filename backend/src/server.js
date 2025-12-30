@@ -8,7 +8,7 @@ const { HumanMessage } = require("@langchain/core/messages");
 // Connect to database
 connectDB();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Create HTTP server
 const server = http.createServer(app);

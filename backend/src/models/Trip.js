@@ -21,6 +21,10 @@ const tripSchema = new mongoose.Schema({
     type: String,
     default: '#3B82F6', // Default blue
   },
+  thumbnailUrl: {
+    type: String,
+    default: '',
+  },
   pointsOfInterest: {
     type: [String],
     default: []

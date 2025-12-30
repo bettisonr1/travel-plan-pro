@@ -1,5 +1,8 @@
 const { ChatOpenAI } = require("@langchain/openai");
 const { HumanMessage, SystemMessage } = require("@langchain/core/messages");
+const fs = require('fs');
+const path = require('path');
+const https = require('https');
 
 const CATEGORIES = [
   'Adventure', 'Relaxation', 'Culture', 'Food & Drink', 
@@ -69,5 +72,78 @@ exports.suggestTripDetails = async (req, res) => {
   } catch (error) {
     console.error("AI Suggestion Error:", error);
     res.status(500).json({ success: false, message: "Failed to generate suggestions" });
+  }
+};
+
+exports.generateTripImage = async (req, res) => {
+  try {
+    const { destination, description } = req.body;
+
+    if (!destination) {
+      return res.status(400).json({ success: false, message: 'Destination is required' });
+    }
+
+    const prompt = `A beautiful, artistic travel poster style illustration of ${destination}. ${description ? `Vibe: ${description}.` : ''} High quality, vibrant colors, minimal text.`;
+
+    // 1. Call OpenAI API directly for Image Generation
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "dall-e-3",
+        prompt: prompt,
+        n: 1,
+        size: "1024x1024",
+        response_format: "url"
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
+
+    const imageUrl = data.data[0].url;
+
+    // 2. Download and Save Image Locally
+    const filename = `trip-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+    const uploadDir = path.join(__dirname, '../../public/uploads');
+    const filepath = path.join(uploadDir, filename);
+
+    // Ensure directory exists (redundant check but safe)
+    if (!fs.existsSync(uploadDir)){
+        fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const file = fs.createWriteStream(filepath);
+
+    https.get(imageUrl, function(response) {
+      response.pipe(file);
+
+      file.on('finish', () => {
+        file.close();
+        
+        // 3. Return the local URL
+        // We return the relative path that matches our express.static config
+        const localUrl = `/uploads/${filename}`;
+        
+        res.status(200).json({
+          success: true,
+          imageUrl: localUrl
+        });
+      });
+    }).on('error', function(err) {
+      fs.unlink(filepath);
+      console.error("Error downloading image:", err);
+      res.status(500).json({ success: false, message: "Failed to save image" });
+    });
+
+  } catch (error) {
+    console.error("Image Generation Error:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to generate image" });
   }
 };

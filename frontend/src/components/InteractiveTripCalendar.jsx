@@ -13,7 +13,7 @@ import {
   isWithinInterval
 } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
 
 const MonthCalendar = ({ month, trips }) => {
   const monthStart = startOfMonth(month);
@@ -114,9 +114,16 @@ const MonthCalendar = ({ month, trips }) => {
 
 const InteractiveTripCalendar = ({ trips }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isOpen, setIsOpen] = useState(false);
   
-  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
-  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
+  const nextMonth = (e) => {
+    e.stopPropagation();
+    setCurrentDate(addMonths(currentDate, 1));
+  };
+  const prevMonth = (e) => {
+    e.stopPropagation();
+    setCurrentDate(subMonths(currentDate, 1));
+  };
 
   const monthsToDisplay = [
     currentDate,
@@ -125,58 +132,78 @@ const InteractiveTripCalendar = ({ trips }) => {
   ];
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8 overflow-hidden">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 mb-8 overflow-hidden">
+      <div 
+        className="flex justify-between items-center p-6 cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={() => setIsOpen(!isOpen)}
+      >
         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
           <CalendarIcon className="w-5 h-5 text-blue-500" />
-          Trip Schedule
+          Calendar
         </h3>
-        <div className="flex gap-2 bg-gray-50 p-1 rounded-lg border border-gray-100">
-          <button 
-            onClick={prevMonth}
-            className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-600"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button 
-            onClick={nextMonth}
-            className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-600"
-          >
-            <ChevronRight size={16} />
-          </button>
+        <div className="flex items-center gap-4">
+            {isOpen && (
+                <div className="flex gap-2 bg-gray-50 p-1 rounded-lg border border-gray-100" onClick={(e) => e.stopPropagation()}>
+                  <button 
+                    onClick={prevMonth}
+                    className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-600"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button 
+                    onClick={nextMonth}
+                    className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-600"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+            )}
+            {isOpen ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
         </div>
       </div>
 
-      <div className="relative">
-        <motion.div 
-          className="flex justify-between -mx-2 overflow-x-auto pb-2 scrollbar-hide"
-          initial={false}
-          animate={{ x: 0 }}
-        >
-          <AnimatePresence mode='popLayout'>
-            {monthsToDisplay.map((month) => (
-              <motion.div
-                layout
-                key={month.toString()}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="flex-1"
-              >
-                <MonthCalendar month={month} trips={trips} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-      </div>
-      
-      <div className="mt-4 flex gap-4 text-xs text-gray-500 justify-center font-medium">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 bg-blue-500 rounded-md opacity-90 shadow-sm"></div>
-          <span>Planned Trip</span>
-        </div>
-      </div>
+      <AnimatePresence>
+        {isOpen && (
+            <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="px-6 pb-6"
+            >
+              <div className="relative">
+                <motion.div 
+                  className="flex justify-between -mx-2 overflow-x-auto pb-2 scrollbar-hide"
+                  initial={false}
+                  animate={{ x: 0 }}
+                >
+                  <AnimatePresence mode='popLayout'>
+                    {monthsToDisplay.map((month) => (
+                      <motion.div
+                        layout
+                        key={month.toString()}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="flex-1"
+                      >
+                        <MonthCalendar month={month} trips={trips} />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              </div>
+              
+              <div className="mt-4 flex gap-4 text-xs text-gray-500 justify-center font-medium">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 bg-blue-500 rounded-md opacity-90 shadow-sm"></div>
+                  <span>Planned Trip</span>
+                </div>
+              </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
