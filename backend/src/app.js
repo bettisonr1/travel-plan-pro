@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const itemRoutes = require('./routes/itemRoutes');
 const tripRoutes = require('./routes/tripRoutes');
 const userRoutes = require('./routes/userRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 // Load env vars
 dotenv.config();
@@ -25,6 +26,7 @@ app.use(cors({
 app.use('/api/items', itemRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

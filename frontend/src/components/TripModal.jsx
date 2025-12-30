@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 import Button from './Button';
+import tripService from '../services/tripService';
+
+const CATEGORIES = [
+  'Adventure', 'Relaxation', 'Culture', 'Food & Drink', 
+  'Nature', 'History', 'Shopping', 'Entertainment'
+];
 
 const TripModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -7,7 +13,10 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
     startDate: '',
     endDate: '',
     description: '',
+    pointsOfInterest: [],
   });
+  const [activeTab, setActiveTab] = useState('create');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   if (!isOpen) return null;
 
@@ -16,17 +25,51 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleCategoryToggle = (category) => {
+    setFormData((prev) => {
+      const current = prev.pointsOfInterest || [];
+      if (current.includes(category)) {
+        return { ...prev, pointsOfInterest: current.filter((c) => c !== category) };
+      } else {
+        return { ...prev, pointsOfInterest: [...current, category] };
+      }
+    });
+  };
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const result = await tripService.suggest(formData);
+      if (result.success) {
+        setFormData((prev) => ({
+          ...prev,
+          destination: result.data.destination,
+          description: result.data.description,
+          pointsOfInterest: result.data.categories,
+        }));
+        setActiveTab('advanced');
+      }
+    } catch (error) {
+      console.error('Generation failed', error);
+      // Could add toast notification here
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({ destination: '', startDate: '', endDate: '', description: '' });
+    setFormData({ destination: '', startDate: '', endDate: '', description: '', pointsOfInterest: [] });
+    setActiveTab('create');
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none">
-      <div className="fixed inset-0 bg-black opacity-50"></div>
+      <div className="fixed inset-0 bg-black opacity-50" onClick={onClose}></div>
       <div className="relative w-full max-w-md mx-auto my-6 z-50">
         <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
+          {/* Header */}
           <div className="flex items-start justify-between p-5 border-b border-solid border-gray-300 rounded-t">
             <h3 className="text-2xl font-semibold">New Trip</h3>
             <button
@@ -36,8 +79,35 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
               <span className="text-gray-500 h-6 w-6 text-2xl block outline-none focus:outline-none">×</span>
             </button>
           </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200">
+            <button
+              className={`flex-1 py-3 px-4 text-center font-medium ${
+                activeTab === 'create'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('create')}
+            >
+              Create
+            </button>
+            <button
+              className={`flex-1 py-3 px-4 text-center font-medium ${
+                activeTab === 'advanced'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('advanced')}
+            >
+              Advanced
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit}>
-            <div className="relative p-6 flex-auto">
+            <div className="relative p-6 flex-auto max-h-[60vh] overflow-y-auto">
+              
+              {/* Common Fields */}
               <div className="mb-4">
                 <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="destination">
                   Destination
@@ -97,14 +167,53 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
                   placeholder="Tell us more about your planning..."
                 ></textarea>
               </div>
+
+              {/* Advanced Tab Content */}
+              {activeTab === 'advanced' && (
+                <div className="mt-6 border-t pt-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Points of Interest
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {CATEGORIES.map((category) => (
+                      <label key={category} className="inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+                          checked={formData.pointsOfInterest.includes(category)}
+                          onChange={() => handleCategoryToggle(category)}
+                        />
+                        <span className="ml-2 text-gray-700">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-end p-6 border-t border-solid border-gray-300 rounded-b">
-              <Button variant="secondary" onClick={onClose} className="mr-2">
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary">
-                Create Trip
-              </Button>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-solid border-gray-300 rounded-b">
+               <div>
+                  {activeTab === 'create' && (
+                    <Button 
+                        type="button" 
+                        variant="secondary" 
+                        onClick={handleGenerate}
+                        disabled={isGenerating}
+                        className="mr-2 bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200"
+                    >
+                        {isGenerating ? 'Generating...' : '✨ Generate with AI'}
+                    </Button>
+                  )}
+               </div>
+              <div className="flex">
+                <Button variant="secondary" onClick={onClose} className="mr-2">
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary">
+                  Create Trip
+                </Button>
+              </div>
             </div>
           </form>
         </div>

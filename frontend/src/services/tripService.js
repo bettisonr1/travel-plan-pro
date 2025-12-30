@@ -35,6 +35,11 @@ const tripService = {
     const response = await api.delete(`/trips/${tripId}/users/${userId}`);
     return response.data;
   },
+
+  suggest: async (data) => {
+    const response = await api.post('/ai/suggest', data);
+    return response.data;
+  },
 };
 
 export default tripService;
