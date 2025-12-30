@@ -31,3 +31,5 @@ yarn-error.log*
 *.sln
 *.sw?
 
+# local image uploads
+/public/uploads
