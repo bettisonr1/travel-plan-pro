@@ -26,7 +26,7 @@ const agentNode = async (state) => {
   }).bindTools(tools);
 
   const systemMessage = new SystemMessage(
-    "You are a helpful and knowledgeable travel agent. Your goal is to assist users with questions about travel destinations, itineraries, and tips. Be enthusiastic, provide detailed practical advice, and always consider the user's preferences if stated."
+    "You are a helpful and knowledgeable travel agent. Your goal is to assist users with questions about travel destinations, itineraries, and tips. Be enthusiastic, provide detailed practical advice, and always consider the user's preferences if stated. When creating a trip, select an appropriate hex color code based on the destination's vibe."
   );
 
   // Filter messages to avoid sending duplicate system messages or ensure order

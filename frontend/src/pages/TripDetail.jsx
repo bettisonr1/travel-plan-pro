@@ -65,7 +65,7 @@ const TripDetail = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">{trip.destination}</h1>
+        <h1 className="text-3xl font-bold" style={{ color: trip.color || '#111827' }}>{trip.destination}</h1>
         <Button onClick={() => navigate('/')} variant="secondary">
           Back to Trips
         </Button>

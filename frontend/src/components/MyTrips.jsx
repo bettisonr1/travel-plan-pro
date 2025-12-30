@@ -187,7 +187,7 @@ const MyTrips = () => {
                         </div>
                       </div>
                       <div className="truncate">
-                        <p className="text-lg font-medium text-blue-600 truncate">{trip.destination}</p>
+                        <p className="text-lg font-medium truncate" style={{ color: trip.color || '#2563EB' }}>{trip.destination}</p>
                         <p className="text-sm text-gray-500">
                            {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
                         </p>

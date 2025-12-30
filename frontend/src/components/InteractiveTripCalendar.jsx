@@ -71,11 +71,12 @@ const MonthCalendar = ({ month, trips }) => {
       classes: `${baseClasses} ${textClasses}`,
       bgStyle: isTripDay ? (
         <div 
-          className={`absolute top-0.5 bottom-0.5 bg-blue-500 opacity-90 z-[-1] shadow-sm
+          className={`absolute top-0.5 bottom-0.5 opacity-90 z-[-1] shadow-sm
             ${isStart ? 'left-0.5 rounded-l-md' : 'left-0'} 
             ${isEnd ? 'right-0.5 rounded-r-md' : 'right-0'}
             ${!isStart && !isEnd ? 'left-0 right-0' : ''}
           `} 
+          style={{ backgroundColor: activeTrip.color || '#3B82F6' }}
           title={tripTitle}
         />
       ) : null

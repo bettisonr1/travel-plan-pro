@@ -14,6 +14,7 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
     endDate: '',
     description: '',
     pointsOfInterest: [],
+    color: '#3B82F6',
   });
   const [freeformInput, setFreeformInput] = useState('');
   const [activeTab, setActiveTab] = useState('create');
@@ -50,6 +51,7 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
           startDate: result.data.startDate || prev.startDate,
           endDate: result.data.endDate || prev.endDate,
           pointsOfInterest: result.data.categories,
+          color: result.data.color || prev.color,
         }));
         setActiveTab('advanced');
       }
@@ -64,7 +66,7 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({ destination: '', startDate: '', endDate: '', description: '', pointsOfInterest: [] });
+    setFormData({ destination: '', startDate: '', endDate: '', description: '', pointsOfInterest: [], color: '#3B82F6' });
     setFreeformInput('');
     setActiveTab('create');
   };
@@ -191,6 +193,23 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
                       className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                       placeholder="Tell us more about your planning..."
                     ></textarea>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="color">
+                        Trip Color
+                    </label>
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="color"
+                            name="color"
+                            id="color"
+                            value={formData.color}
+                            onChange={handleChange}
+                            className="h-10 w-20 p-1 rounded border border-gray-300 cursor-pointer"
+                        />
+                        <span className="text-gray-500 text-sm">Select a color for your trip</span>
+                    </div>
                   </div>
     
                   <div className="mt-6 border-t pt-4">

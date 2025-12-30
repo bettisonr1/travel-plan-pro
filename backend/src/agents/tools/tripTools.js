@@ -34,13 +34,14 @@ const searchTrips = tool(
  * This tool should be used when the user wants to add a new trip.
  */
 const createTrip = tool(
-  async ({ destination, startDate, endDate, description, userId }) => {
+  async ({ destination, startDate, endDate, description, userId, color }) => {
     try {
       const tripData = {
         destination,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         description,
+        color: color || '#3B82F6',
       };
       
       // If userId is provided, add it to the users array
@@ -63,6 +64,7 @@ const createTrip = tool(
       endDate: z.string().describe("The end date of the trip (YYYY-MM-DD)"),
       description: z.string().optional().describe("A description of the trip"),
       userId: z.string().optional().describe("The ID of the user creating the trip"),
+      color: z.string().optional().describe("Hex color code for the trip (e.g. #FF0000)"),
     }),
   }
 );
@@ -72,13 +74,14 @@ const createTrip = tool(
  * This tool is used to modify details of a trip like dates or destination.
  */
 const updateTrip = tool(
-  async ({ tripId, destination, startDate, endDate, description }) => {
+  async ({ tripId, destination, startDate, endDate, description, color }) => {
     try {
       const updates = {};
       if (destination) updates.destination = destination;
       if (startDate) updates.startDate = new Date(startDate);
       if (endDate) updates.endDate = new Date(endDate);
       if (description) updates.description = description;
+      if (color) updates.color = color;
 
       const trip = await Trip.findByIdAndUpdate(tripId, updates, { new: true });
       
@@ -100,6 +103,7 @@ const updateTrip = tool(
       startDate: z.string().optional().describe("The new start date (YYYY-MM-DD)"),
       endDate: z.string().optional().describe("The new end date (YYYY-MM-DD)"),
       description: z.string().optional().describe("The new description"),
+      color: z.string().optional().describe("The new hex color code"),
     }),
   }
 );
