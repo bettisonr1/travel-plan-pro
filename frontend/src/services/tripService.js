@@ -55,6 +55,11 @@ const tripService = {
     const response = await api.post('/ai/generate-image', data);
     return response.data;
   },
+
+  generateLogo: async () => {
+    const response = await api.post('/ai/generate-logo');
+    return response.data;
+  },
 };
 
 export default tripService;

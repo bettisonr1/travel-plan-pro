@@ -101,16 +101,10 @@ const MyTrips = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">My Trips</h2>
-        <div className="flex gap-2">
-            <Button onClick={() => setShowPlanMode(true)} variant="secondary">
-              Plan Mode
-            </Button>
-            <Button onClick={() => setIsModalOpen(true)} variant="primary">
-              New Trip
-            </Button>
-        </div>
+      <div className="flex justify-end items-center">
+        <Button onClick={() => setIsModalOpen(true)} variant="primary">
+          New Trip
+        </Button>
       </div>
 
       {trips.length > 0 && <InteractiveTripCalendar trips={trips} />}
@@ -133,7 +127,7 @@ const MyTrips = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
             `}
           >
-            Trips
+            Upcoming
           </button>
           <button
             onClick={() => setActiveTab('past')}
@@ -144,7 +138,7 @@ const MyTrips = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
             `}
           >
-            Past Trips
+            Past
           </button>
         </nav>
       </div>

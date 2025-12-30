@@ -85,6 +85,28 @@ exports.generateTripImage = async (req, res) => {
 
     const prompt = `A beautiful, artistic travel poster style illustration of ${destination}. ${description ? `Vibe: ${description}.` : ''} High quality, vibrant colors, minimal text.`;
 
+    await generateAndSaveImage(res, prompt, "trip");
+
+  } catch (error) {
+    console.error("Image Generation Error:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to generate image" });
+  }
+};
+
+exports.generateLogo = async (req, res) => {
+  try {
+    const prompt = `A creative and artistic logo for a travel application named 'Travel Planner'. The text 'Travel Planner' must be clearly visible, legible, and integrated into the design. The design should be vibrant, modern, and travel-themed, incorporating elements like planes, globes, or suitcases. High quality, professional graphic design style.`;
+
+    await generateAndSaveImage(res, prompt, "logo");
+
+  } catch (error) {
+    console.error("Logo Generation Error:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to generate logo" });
+  }
+};
+
+// Helper function to handle OpenAI image generation and saving
+async function generateAndSaveImage(res, prompt, prefix) {
     // 1. Call OpenAI API directly for Image Generation
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -110,7 +132,7 @@ exports.generateTripImage = async (req, res) => {
     const imageUrl = data.data[0].url;
 
     // 2. Download and Save Image Locally
-    const filename = `trip-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+    const filename = `${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
     const uploadDir = path.join(__dirname, '../../public/uploads');
     const filepath = path.join(uploadDir, filename);
 
@@ -141,9 +163,4 @@ exports.generateTripImage = async (req, res) => {
       console.error("Error downloading image:", err);
       res.status(500).json({ success: false, message: "Failed to save image" });
     });
-
-  } catch (error) {
-    console.error("Image Generation Error:", error);
-    res.status(500).json({ success: false, message: error.message || "Failed to generate image" });
-  }
-};
+}

@@ -9,5 +9,6 @@ router.use(protect);
 
 router.post('/suggest', AIController.suggestTripDetails);
 router.post('/generate-image', AIController.generateTripImage);
+router.post('/generate-logo', AIController.generateLogo);
 
 module.exports = router;
