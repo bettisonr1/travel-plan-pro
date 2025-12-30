@@ -14,6 +14,7 @@ const TripDetail = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [isManageUsersOpen, setIsManageUsersOpen] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   useEffect(() => {
     const fetchTrip = async () => {
@@ -81,6 +82,35 @@ const TripDetail = () => {
     }
   };
 
+  const handleGenerateThumbnail = async () => {
+    if (!trip) return;
+    
+    setGeneratingImage(true);
+    try {
+      // 1. Generate the image
+      const imageResponse = await tripService.generateImage({
+        destination: trip.destination,
+        description: trip.description
+      });
+
+      if (imageResponse.success && imageResponse.imageUrl) {
+        // 2. Update the trip with the new thumbnail URL
+        const updateResponse = await tripService.update(trip._id, {
+          thumbnailUrl: imageResponse.imageUrl
+        });
+
+        if (updateResponse.success) {
+          setTrip(updateResponse.data);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate thumbnail:', error);
+      // Optional: Add toast or error message state here
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
+
   if (loading) return <div className="text-center py-10">Loading...</div>;
   if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
   if (!trip) return <div className="text-center py-10">Trip not found</div>;
@@ -102,7 +132,18 @@ const TripDetail = () => {
       )}
 
       <div className="flex justify-between items-center">
-        {!trip.thumbnailUrl && <h1 className="text-3xl font-bold" style={{ color: trip.color || '#111827' }}>{trip.destination}</h1>}
+        <div className="flex items-center gap-4">
+          {!trip.thumbnailUrl && <h1 className="text-3xl font-bold" style={{ color: trip.color || '#111827' }}>{trip.destination}</h1>}
+          {!trip.thumbnailUrl && (
+            <Button 
+              onClick={handleGenerateThumbnail} 
+              variant="secondary"
+              disabled={generatingImage}
+            >
+              {generatingImage ? 'Generating...' : 'Generate Thumbnail'}
+            </Button>
+          )}
+        </div>
         {trip.thumbnailUrl && <div></div>} {/* Spacer if header is in hero image */}
         
         <Button onClick={() => navigate('/')} variant="secondary">
