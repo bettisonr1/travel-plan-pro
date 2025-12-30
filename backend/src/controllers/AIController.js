@@ -8,7 +8,7 @@ const CATEGORIES = [
 
 exports.suggestTripDetails = async (req, res) => {
   try {
-    const { destination, description, startDate, endDate } = req.body;
+    const { destination, description, startDate, endDate, freeformInput } = req.body;
 
     const model = new ChatOpenAI({
       temperature: 0.2, // Lower temperature for more deterministic output
@@ -23,12 +23,19 @@ Allowed Categories: ${CATEGORIES.join(', ')}.
 Return a JSON object with the following fields:
 - "destination": The refined destination name (e.g., "Paris" -> "Paris, France").
 - "description": A polished version of the user's description (keep it brief but engaging).
+- "startDate": The start date in YYYY-MM-DD format if mentioned, otherwise null.
+- "endDate": The end date in YYYY-MM-DD format if mentioned, otherwise null.
 - "categories": An array of strings containing relevant categories from the Allowed Categories list based on the destination and description.
 
 Output ONLY valid JSON.
 `;
 
-    const userPrompt = `Destination: ${destination || "Not specified"}\nDescription: ${description || "Not specified"}`;
+    let userPrompt;
+    if (freeformInput) {
+        userPrompt = `Trip Request: ${freeformInput}`;
+    } else {
+        userPrompt = `Destination: ${destination || "Not specified"}\nDescription: ${description || "Not specified"}\nDates: ${startDate} to ${endDate}`;
+    }
 
     const response = await model.invoke([
       new SystemMessage(systemPrompt),
@@ -52,8 +59,8 @@ Output ONLY valid JSON.
         destination: result.destination || destination,
         description: result.description || description,
         categories: result.categories || [],
-        startDate,
-        endDate
+        startDate: result.startDate || startDate || '',
+        endDate: result.endDate || endDate || ''
       }
     });
 

@@ -15,6 +15,7 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
     description: '',
     pointsOfInterest: [],
   });
+  const [freeformInput, setFreeformInput] = useState('');
   const [activeTab, setActiveTab] = useState('create');
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -39,12 +40,15 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const result = await tripService.suggest(formData);
+      const payload = activeTab === 'create' ? { freeformInput } : formData;
+      const result = await tripService.suggest(payload);
       if (result.success) {
         setFormData((prev) => ({
           ...prev,
           destination: result.data.destination,
           description: result.data.description,
+          startDate: result.data.startDate || prev.startDate,
+          endDate: result.data.endDate || prev.endDate,
           pointsOfInterest: result.data.categories,
         }));
         setActiveTab('advanced');
@@ -61,6 +65,7 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
     e.preventDefault();
     onSubmit(formData);
     setFormData({ destination: '', startDate: '', endDate: '', description: '', pointsOfInterest: [] });
+    setFreeformInput('');
     setActiveTab('create');
   };
 
@@ -107,87 +112,106 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
           <form onSubmit={handleSubmit}>
             <div className="relative p-6 flex-auto max-h-[60vh] overflow-y-auto">
               
-              {/* Common Fields */}
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="destination">
-                  Destination
-                </label>
-                <input
-                  type="text"
-                  name="destination"
-                  id="destination"
-                  required
-                  value={formData.destination}
-                  onChange={handleChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  placeholder="Where are you going?"
-                />
-              </div>
-              <div className="mb-4 flex space-x-4">
-                <div className="w-1/2">
-                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="startDate">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    id="startDate"
-                    required
-                    value={formData.startDate}
-                    onChange={handleChange}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  />
-                </div>
-                <div className="w-1/2">
-                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="endDate">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    name="endDate"
-                    id="endDate"
-                    required
-                    value={formData.endDate}
-                    onChange={handleChange}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  />
-                </div>
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
-                  Describe your trip
-                </label>
-                <textarea
-                  name="description"
-                  id="description"
-                  rows="3"
-                  value={formData.description}
-                  onChange={handleChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  placeholder="Tell us more about your planning..."
-                ></textarea>
-              </div>
-
-              {/* Advanced Tab Content */}
-              {activeTab === 'advanced' && (
-                <div className="mt-6 border-t pt-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Points of Interest
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {CATEGORIES.map((category) => (
-                      <label key={category} className="inline-flex items-center">
-                        <input
-                          type="checkbox"
-                          className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
-                          checked={formData.pointsOfInterest.includes(category)}
-                          onChange={() => handleCategoryToggle(category)}
-                        />
-                        <span className="ml-2 text-gray-700">{category}</span>
-                      </label>
-                    ))}
+              {activeTab === 'create' ? (
+                 <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="freeformInput">
+                      Tell us about your trip
+                    </label>
+                    <textarea
+                      name="freeformInput"
+                      id="freeformInput"
+                      rows="5"
+                      value={freeformInput}
+                      onChange={(e) => setFreeformInput(e.target.value)}
+                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      placeholder="e.g. A weekend in Paris next May focused on art and food..."
+                    ></textarea>
+                    <p className="text-sm text-gray-500 mt-2">
+                        We'll automatically extract the destination, dates, and suggest categories for you.
+                    </p>
+                 </div>
+              ) : (
+                <>
+                  {/* Common Fields */}
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="destination">
+                      Destination
+                    </label>
+                    <input
+                      type="text"
+                      name="destination"
+                      id="destination"
+                      required
+                      value={formData.destination}
+                      onChange={handleChange}
+                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      placeholder="Where are you going?"
+                    />
                   </div>
-                </div>
+                  <div className="mb-4 flex space-x-4">
+                    <div className="w-1/2">
+                      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="startDate">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        name="startDate"
+                        id="startDate"
+                        required
+                        value={formData.startDate}
+                        onChange={handleChange}
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      />
+                    </div>
+                    <div className="w-1/2">
+                      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="endDate">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        name="endDate"
+                        id="endDate"
+                        required
+                        value={formData.endDate}
+                        onChange={handleChange}
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      />
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
+                      Describe your trip
+                    </label>
+                    <textarea
+                      name="description"
+                      id="description"
+                      rows="3"
+                      value={formData.description}
+                      onChange={handleChange}
+                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      placeholder="Tell us more about your planning..."
+                    ></textarea>
+                  </div>
+    
+                  <div className="mt-6 border-t pt-4">
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      Points of Interest
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {CATEGORIES.map((category) => (
+                        <label key={category} className="inline-flex items-center">
+                          <input
+                            type="checkbox"
+                            className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+                            checked={formData.pointsOfInterest.includes(category)}
+                            onChange={() => handleCategoryToggle(category)}
+                          />
+                          <span className="ml-2 text-gray-700">{category}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
 
@@ -199,7 +223,7 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
                         type="button" 
                         variant="secondary" 
                         onClick={handleGenerate}
-                        disabled={isGenerating}
+                        disabled={isGenerating || !freeformInput.trim()}
                         className="mr-2 bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200"
                     >
                         {isGenerating ? 'Generating...' : '✨ Generate with AI'}
@@ -210,9 +234,11 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
                 <Button variant="secondary" onClick={onClose} className="mr-2">
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary">
-                  Create Trip
-                </Button>
+                {activeTab === 'advanced' && (
+                    <Button type="submit" variant="primary">
+                      Create Trip
+                    </Button>
+                )}
               </div>
             </div>
           </form>
