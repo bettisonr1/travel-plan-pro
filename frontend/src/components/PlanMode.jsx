@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import authService from '../services/authService';
 
 const PlanMode = ({ onClose }) => {
   const [socket, setSocket] = useState(null);
@@ -47,7 +48,8 @@ const PlanMode = ({ onClose }) => {
     setMessages((prev) => [...prev, { sender: 'user', content: input }]);
     
     // Send to backend
-    socket.emit('chat_message', { message: input });
+    const user = authService.getCurrentUser();
+    socket.emit('chat_message', { message: input, userId: user?._id });
     
     setInput('');
   };
