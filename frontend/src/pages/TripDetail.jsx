@@ -4,6 +4,7 @@ import tripService from '../services/tripService';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import ManageUsersModal from '../components/ManageUsersModal';
+import MessageBoard from '../components/MessageBoard';
 
 const TripDetail = () => {
   const { id } = useParams();
@@ -55,6 +56,28 @@ const TripDetail = () => {
       }
     } catch (error) {
       console.error('Failed to remove user', error);
+    }
+  };
+
+  const handleMessagePosted = async (text) => {
+    try {
+      const response = await tripService.addMessage(trip._id, text);
+      if (response.success) {
+        setTrip(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to post message', error);
+    }
+  };
+
+  const handleMessageLiked = async (messageId) => {
+    try {
+      const response = await tripService.toggleLikeMessage(trip._id, messageId);
+      if (response.success) {
+        setTrip(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to like message', error);
     }
   };
 
@@ -203,12 +226,12 @@ const TripDetail = () => {
         )}
 
         {activeTab === 'message-board' && (
-          <Card>
-            <div className="text-center py-10 text-gray-500">
-              <p>Message board for trip attendees.</p>
-              <p className="text-sm mt-2">(Feature coming soon)</p>
-            </div>
-          </Card>
+          <MessageBoard 
+            tripId={trip._id}
+            messages={trip.messages}
+            onMessagePosted={handleMessagePosted}
+            onMessageLiked={handleMessageLiked}
+          />
         )}
       </div>
 

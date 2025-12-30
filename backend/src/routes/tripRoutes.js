@@ -12,5 +12,7 @@ router.put('/:id', (req, res) => TripController.updateTrip(req, res));
 router.delete('/:id', (req, res) => TripController.deleteTrip(req, res));
 router.post('/:id/users', (req, res) => TripController.addUser(req, res));
 router.delete('/:id/users/:userId', (req, res) => TripController.removeUser(req, res));
+router.post('/:id/messages', (req, res) => TripController.addMessage(req, res));
+router.post('/:id/messages/:messageId/like', (req, res) => TripController.toggleLikeMessage(req, res));
 
 module.exports = router;

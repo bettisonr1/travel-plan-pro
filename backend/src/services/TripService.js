@@ -48,6 +48,22 @@ class TripService {
     }
     return trip;
   }
+
+  async addMessage(tripId, messageData) {
+    const trip = await TripRepository.addMessage(tripId, messageData);
+    if (!trip) {
+      throw new Error('Trip not found');
+    }
+    return trip;
+  }
+
+  async toggleLikeMessage(tripId, messageId, userId) {
+    const trip = await TripRepository.toggleLikeMessage(tripId, messageId, userId);
+    if (!trip) {
+      throw new Error('Trip not found or message not found');
+    }
+    return trip;
+  }
 }
 
 module.exports = new TripService();
