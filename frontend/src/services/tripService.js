@@ -40,6 +40,11 @@ const tripService = {
     const response = await api.post('/ai/suggest', data);
     return response.data;
   },
+
+  generateImage: async (data) => {
+    const response = await api.post('/ai/generate-image', data);
+    return response.data;
+  },
 };
 
 export default tripService;

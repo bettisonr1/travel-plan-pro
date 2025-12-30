@@ -15,10 +15,12 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
     description: '',
     pointsOfInterest: [],
     color: '#3B82F6',
+    thumbnailUrl: '',
   });
   const [freeformInput, setFreeformInput] = useState('');
   const [activeTab, setActiveTab] = useState('create');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   if (!isOpen) return null;
 
@@ -63,10 +65,32 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
+  const handleGenerateImage = async () => {
+    if (!formData.destination) {
+        alert('Please enter a destination first.');
+        return;
+    }
+    setIsGeneratingImage(true);
+    try {
+        const response = await tripService.generateImage({
+            destination: formData.destination,
+            description: formData.description
+        });
+        if (response.success) {
+            setFormData(prev => ({ ...prev, thumbnailUrl: response.imageUrl }));
+        }
+    } catch (error) {
+        console.error('Image generation failed', error);
+        alert('Failed to generate image');
+    } finally {
+        setIsGeneratingImage(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({ destination: '', startDate: '', endDate: '', description: '', pointsOfInterest: [], color: '#3B82F6' });
+    setFormData({ destination: '', startDate: '', endDate: '', description: '', pointsOfInterest: [], color: '#3B82F6', thumbnailUrl: '' });
     setFreeformInput('');
     setActiveTab('create');
   };
@@ -209,6 +233,30 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
                             className="h-10 w-20 p-1 rounded border border-gray-300 cursor-pointer"
                         />
                         <span className="text-gray-500 text-sm">Select a color for your trip</span>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                        Thumbnail
+                    </label>
+                    <div className="flex flex-col space-y-2">
+                         {formData.thumbnailUrl && (
+                             <img 
+                                src={`http://localhost:5001${formData.thumbnailUrl}`} 
+                                alt="Trip Thumbnail" 
+                                className="w-full h-32 object-cover rounded-md mb-2"
+                             />
+                         )}
+                         <Button  
+                            type="button" 
+                            variant="secondary" 
+                            onClick={handleGenerateImage}
+                            disabled={isGeneratingImage || !formData.destination}
+                            className="w-full"
+                         >
+                            {isGeneratingImage ? 'Generating Image...' : (formData.thumbnailUrl ? 'Regenerate Image' : 'Generate AI Image')}
+                         </Button>
                     </div>
                   </div>
     

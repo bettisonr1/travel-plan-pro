@@ -8,5 +8,6 @@ const { protect } = require('../middleware/auth');
 router.use(protect);
 
 router.post('/suggest', AIController.suggestTripDetails);
+router.post('/generate-image', AIController.generateTripImage);
 
 module.exports = router;

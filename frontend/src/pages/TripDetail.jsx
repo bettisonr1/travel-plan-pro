@@ -64,8 +64,24 @@ const TripDetail = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {trip.thumbnailUrl && (
+          <div className="w-full h-64 rounded-xl overflow-hidden shadow-lg relative">
+              <img 
+                  src={`http://localhost:5001${trip.thumbnailUrl}`} 
+                  alt={trip.destination} 
+                  className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              <h1 className="absolute bottom-6 left-6 text-4xl font-bold text-white drop-shadow-md">
+                {trip.destination}
+              </h1>
+          </div>
+      )}
+
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold" style={{ color: trip.color || '#111827' }}>{trip.destination}</h1>
+        {!trip.thumbnailUrl && <h1 className="text-3xl font-bold" style={{ color: trip.color || '#111827' }}>{trip.destination}</h1>}
+        {trip.thumbnailUrl && <div></div>} {/* Spacer if header is in hero image */}
+        
         <Button onClick={() => navigate('/')} variant="secondary">
           Back to Trips
         </Button>
