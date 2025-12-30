@@ -65,6 +65,30 @@ class UserController {
       res.status(500).json({ success: false, error: error.message });
     }
   }
+
+  async updateMe(req, res) {
+    try {
+      const { firstname, lastname, email, avatarColor } = req.body;
+      const fieldsToUpdate = { firstname, lastname, email, avatarColor };
+      
+      // Remove undefined fields
+      Object.keys(fieldsToUpdate).forEach(key => fieldsToUpdate[key] === undefined && delete fieldsToUpdate[key]);
+
+      const user = await UserService.updateUser(req.user.id, fieldsToUpdate);
+      res.status(200).json({
+        success: true,
+        data: {
+          _id: user._id,
+          firstname: user.firstname,
+          lastname: user.lastname,
+          email: user.email,
+          avatarColor: user.avatarColor,
+        },
+      });
+    } catch (error) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
 }
 
 module.exports = new UserController();

@@ -34,6 +34,16 @@ const searchUsers = async (query) => {
   return response.data;
 };
 
+const updateUser = async (userData) => {
+  const response = await api.put('/users/me', userData);
+  if (response.data.success) {
+    const currentUser = getCurrentUser();
+    const updatedUser = { ...currentUser, ...response.data.data };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  }
+  return response.data;
+};
+
 const authService = {
   login,
   register,
@@ -41,6 +51,7 @@ const authService = {
   getCurrentUser,
   getAllUsers,
   searchUsers,
+  updateUser,
 };
 
 export default authService;
