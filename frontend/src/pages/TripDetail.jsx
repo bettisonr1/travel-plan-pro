@@ -173,29 +173,52 @@ const TripDetail = () => {
               // Note: our current graph logic doesn't explicitly return 'categories' in the stream events 
               // like the previous mock did, but we can infer or display what we get.
               
-              if (data.researcher && data.researcher.research) {
-                 // data.researcher.research is an array of strings in our current impl
-                 // We want to process these strings to extract category if possible or just display them
-                 
-                 const newFindings = data.researcher.research.map(content => {
-                     const match = content.match(/^### (.*)\n\n/);
-                     const category = match ? match[1] : 'General';
-                     return { category, content };
-                 });
+              if (data.type === 'token') {
+                  const content = data.content;
+                  const tags = data.tags || [];
+                  // Find category from tags if available
+                  const category = tags.find(t => t !== 'summary'); // assuming non-summary tags are categories
+                  
+                  if (data.node === 'researcher' && category) {
+                       setResearchState(prev => {
+                           const existingFindingIndex = prev.findings.findIndex(f => f.category === category);
+                           let newFindings = [...prev.findings];
+                           
+                           if (existingFindingIndex >= 0) {
+                               newFindings[existingFindingIndex] = {
+                                   ...newFindings[existingFindingIndex],
+                                   content: newFindings[existingFindingIndex].content + content
+                               };
+                           } else {
+                               newFindings.push({ category, content });
+                           }
+                           
+                           return { ...prev, findings: newFindings };
+                       });
+                  } else if (data.node === 'summariser') {
+                      setResearchState(prev => ({
+                          ...prev,
+                          summary: prev.summary + content
+                      }));
+                  }
+              }
 
-                 setResearchState(prev => ({
-                  ...prev,
-                  findings: [...prev.findings, ...newFindings],
-                  logs: [...prev.logs, `Research completed for categories: ${newFindings.map(f => f.category).join(', ')}`]
-                }));
+              if (data.researcher && data.researcher.research) {
+                 // Fallback or completion update if needed
               }
               
-              if (data.summariser && data.summariser.summary) {
-                setResearchState(prev => ({
-                  ...prev,
-                  summary: data.summariser.summary,
-                  logs: [...prev.logs, 'Summary generated!']
-                }));
+              if (data.type === 'node_complete') {
+                  if (data.node === 'researcher') {
+                       setResearchState(prev => ({
+                          ...prev,
+                           logs: [...prev.logs, `Completed research step`]
+                       }));
+                  } else if (data.node === 'summariser') {
+                       setResearchState(prev => ({
+                          ...prev,
+                           logs: [...prev.logs, `Summary generated!`]
+                       }));
+                  }
               }
               
               if (data.error) {
