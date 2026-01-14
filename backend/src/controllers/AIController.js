@@ -98,44 +98,70 @@ exports.performDeepResearch = async (req, res) => {
       inputs.categories = ['General', 'Attractions', 'Food'];
     }
 
-    const stream = await graph.stream(inputs);
+    const stream = await graph.streamEvents(inputs, {
+        version: "v2"
+    });
 
     // Accumulated results to save later
     let researchResults = [];
     let summaryResult = '';
 
     for await (const event of stream) {
-      // Stream each event to the client
-      res.write(`data: ${JSON.stringify(event)}\n\n`);
-      
-      // Capture results for saving
-      // LangGraph events are keyed by node name, e.g. { researcher: { research: [...] } }
-      // or { summariser: { summary: "..." } }
-      
-      // Since 'researcher' node output is an array of strings in our JS graph implementation
-      // and we want to correlate it with categories, we might need to parse the content 
-      // or adjust the graph to return structured objects.
-      
-      // In our graph implementation:
-      // researcher returns: { research: [`### ${state.category}\n\n${research.research}`] }
-      
-      if (event.researcher && event.researcher.research) {
-         // The research output is an array of strings
-         event.researcher.research.forEach(content => {
-             // Extract category from the header we added
-             const match = content.match(/^### (.*)\n\n/);
-             const category = match ? match[1] : 'General';
-             // Remove the header from content if desired, or keep it.
-             // Let's keep the content as is for now, but save structured
-             researchResults.push({
-                 category: category,
-                 content: content
-             });
-         });
+      // Filter for LLM streaming events to send token by token
+      if (event.event === "on_chat_model_stream") {
+          const chunk = event.data.chunk;
+          if (chunk && chunk.content) {
+              // Extract category from metadata if available
+              const category = event.metadata?.category;
+              const isSummary = event.metadata?.type === 'summary' || (event.tags && event.tags.includes('summary'));
+              
+              res.write(`data: ${JSON.stringify({ 
+                  type: 'token', 
+                  content: chunk.content, 
+                  node: event.metadata?.langgraph_node,
+                  category: category,
+                  isSummary: isSummary,
+                  tags: event.tags || []
+              })}\n\n`);
+          }
       }
       
-      if (event.summariser && event.summariser.summary) {
-          summaryResult = event.summariser.summary;
+      // Keep existing logic for state updates (on_chain_end or on_node_end) to capture final results for DB
+      if (event.event === "on_chain_end" && event.name === "researcher") {
+          // event.data.output would be { research: [...] }
+          if (event.data.output && event.data.output.research) {
+             event.data.output.research.forEach(content => {
+                 const match = content.match(/^### (.*)\n\n/);
+                 const category = match ? match[1] : 'General';
+                 
+                 // Update our accumulator
+                 const existingIndex = researchResults.findIndex(r => r.category === category);
+                 if (existingIndex >= 0) {
+                     researchResults[existingIndex].content = content;
+                 } else {
+                     researchResults.push({ category, content });
+                 }
+             });
+             
+             // Send "complete" message for a node so UI knows to finalize
+             res.write(`data: ${JSON.stringify({ 
+                type: 'node_complete', 
+                node: event.name,
+                output: event.data.output
+            })}\n\n`);
+          }
+      }
+
+      if (event.event === "on_chain_end" && event.name === "summariser") {
+          if (event.data.output && event.data.output.summary) {
+              summaryResult = event.data.output.summary;
+              
+              res.write(`data: ${JSON.stringify({ 
+                type: 'node_complete', 
+                node: event.name,
+                output: event.data.output
+            })}\n\n`);
+          }
       }
     }
 

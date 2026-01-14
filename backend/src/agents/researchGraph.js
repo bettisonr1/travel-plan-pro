@@ -37,9 +37,13 @@ const researcher = async (state) => {
         research: z.string().describe("The research findings for the category and destination.")
     });
 
-    const structuredLlm = llm.withStructuredOutput(schema);
+    // We pass tags and metadata to help identify the stream events
     const research = await structuredLlm.invoke(
-        prompt
+        prompt,
+        { 
+            tags: [state.category],
+            metadata: { category: state.category }
+        }
     );
 
     // Return an object that matches the state update we want
@@ -73,7 +77,11 @@ const summariser = async (state) => {
 
     const structuredLlm = llm.withStructuredOutput(schema);
     const summary = await structuredLlm.invoke(
-        prompt
+        prompt,
+        { 
+            tags: ["summary"],
+            metadata: { type: "summary" }
+        }
     );
 
     
