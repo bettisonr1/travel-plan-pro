@@ -1,4 +1,5 @@
 const TripService = require('../services/TripService');
+const { agentFactory } = require('../agents/agentFactory');
 
 class TripController {
   async getTrips(req, res) {
@@ -99,6 +100,37 @@ class TripController {
     } catch (error) {
       const status = error.message.includes('not found') ? 404 : 500;
       res.status(status).json({ success: false, error: error.message });
+    }
+  }
+
+  async startDeepResearch(req, res) {
+    const { id } = req.params;
+    
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    try {
+      const trip = await TripService.getTripById(id);
+      
+      const inputs = {
+        destination: trip.destination,
+        description: trip.description,
+      };
+
+      const stream = await agentFactory.stream(inputs);
+
+      for await (const event of stream) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
+
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } catch (error) {
+      console.error('Error in deep research:', error);
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+      res.end();
     }
   }
 }

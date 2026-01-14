@@ -1,0 +1,11 @@
+{
+    "dockerfile_lines": [],
+    "graphs": {
+      "deep-research-agent": "./deep-research-agent.ts:graph",
+      "research-graph": "./research-graph.ts:graph"
+    },
+    "env": "./.env",
+    "dependencies": [
+      "."
+    ]
+  }
