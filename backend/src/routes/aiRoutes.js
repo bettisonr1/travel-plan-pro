@@ -8,6 +8,7 @@ const { protect } = require('../middleware/auth');
 router.use(protect);
 
 router.post('/suggest', AIController.suggestTripDetails);
+router.get('/:id/deep-research', AIController.performDeepResearch);
 router.post('/generate-image', AIController.generateTripImage);
 router.post('/generate-logo', AIController.generateLogo);
 

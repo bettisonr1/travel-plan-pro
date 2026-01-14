@@ -3,6 +3,8 @@ const { HumanMessage, SystemMessage } = require("@langchain/core/messages");
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const { graph } = require('../agents/researchGraph');
+const TripService = require('../services/TripService');
 
 const CATEGORIES = [
   'Adventure', 'Relaxation', 'Culture', 'Food & Drink', 
@@ -72,6 +74,83 @@ exports.suggestTripDetails = async (req, res) => {
   } catch (error) {
     console.error("AI Suggestion Error:", error);
     res.status(500).json({ success: false, message: "Failed to generate suggestions" });
+  }
+};
+
+exports.performDeepResearch = async (req, res) => {
+  const { id } = req.params;
+
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  try {
+    const trip = await TripService.getTripById(id);
+
+    const inputs = {
+      destination: trip.destination,
+      categories: trip.pointsOfInterest || [], // Assuming pointsOfInterest are the categories
+    };
+    
+    if (inputs.categories.length === 0) {
+      // Default categories if none exist
+      inputs.categories = ['General', 'Attractions', 'Food'];
+    }
+
+    const stream = await graph.stream(inputs);
+
+    // Accumulated results to save later
+    let researchResults = [];
+    let summaryResult = '';
+
+    for await (const event of stream) {
+      // Stream each event to the client
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+      
+      // Capture results for saving
+      // LangGraph events are keyed by node name, e.g. { researcher: { research: [...] } }
+      // or { summariser: { summary: "..." } }
+      
+      // Since 'researcher' node output is an array of strings in our JS graph implementation
+      // and we want to correlate it with categories, we might need to parse the content 
+      // or adjust the graph to return structured objects.
+      
+      // In our graph implementation:
+      // researcher returns: { research: [`### ${state.category}\n\n${research.research}`] }
+      
+      if (event.researcher && event.researcher.research) {
+         // The research output is an array of strings
+         event.researcher.research.forEach(content => {
+             // Extract category from the header we added
+             const match = content.match(/^### (.*)\n\n/);
+             const category = match ? match[1] : 'General';
+             // Remove the header from content if desired, or keep it.
+             // Let's keep the content as is for now, but save structured
+             researchResults.push({
+                 category: category,
+                 content: content
+             });
+         });
+      }
+      
+      if (event.summariser && event.summariser.summary) {
+          summaryResult = event.summariser.summary;
+      }
+    }
+
+    // Save to database
+    await TripService.updateTrip(id, {
+        researchFindings: researchResults,
+        researchSummary: summaryResult
+    });
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (error) {
+    console.error('Error in deep research:', error);
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+    res.end();
   }
 };
 

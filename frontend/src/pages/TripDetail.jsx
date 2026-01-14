@@ -118,6 +118,20 @@ const TripDetail = () => {
     summary: '',
     isResearching: false
   });
+  
+  // Initialize state with existing trip data if available
+  useEffect(() => {
+    if (trip) {
+      setResearchState(prev => ({
+        ...prev,
+        // If we have saved research findings, use them
+        findings: trip.researchFindings || [],
+        summary: trip.researchSummary || '',
+        // If we have points of interest, use them as categories initially (or load from research if we tracked that separately)
+        categories: trip.pointsOfInterest || []
+      }));
+    }
+  }, [trip]);
 
   const handleStartResearch = async () => {
     setResearchState(prev => ({ ...prev, isResearching: true, logs: ['Starting research workflow...'], summary: '' }));
@@ -126,7 +140,7 @@ const TripDetail = () => {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = user?.token;
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/trips/${trip._id}/research`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/ai/${trip._id}/deep-research`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -154,28 +168,36 @@ const TripDetail = () => {
               const data = JSON.parse(dataStr);
               
               // Handle different state updates from LangGraph
-              if (data.categories) {
-                setResearchState(prev => ({
-                  ...prev,
-                  categories: data.categories,
-                  logs: [...prev.logs, `identified categories: ${data.categories.join(', ')}`]
-                }));
-              }
+              // Note: our current graph logic doesn't explicitly return 'categories' in the stream events 
+              // like the previous mock did, but we can infer or display what we get.
               
-              if (data.findings) {
+              if (data.researcher && data.researcher.research) {
+                 // data.researcher.research is an array of strings in our current impl
+                 // We want to process these strings to extract category if possible or just display them
+                 
+                 const newFindings = data.researcher.research.map(content => {
+                     const match = content.match(/^### (.*)\n\n/);
+                     const category = match ? match[1] : 'General';
+                     return { category, content };
+                 });
+
                  setResearchState(prev => ({
                   ...prev,
-                  findings: [...prev.findings, ...data.findings],
-                  logs: [...prev.logs, `Research completed for a batch of categories`]
+                  findings: [...prev.findings, ...newFindings],
+                  logs: [...prev.logs, `Research completed for categories: ${newFindings.map(f => f.category).join(', ')}`]
                 }));
               }
               
-              if (data.summary) {
+              if (data.summariser && data.summariser.summary) {
                 setResearchState(prev => ({
                   ...prev,
-                  summary: data.summary,
+                  summary: data.summariser.summary,
                   logs: [...prev.logs, 'Summary generated!']
                 }));
+              }
+              
+              if (data.error) {
+                 setResearchState(prev => ({ ...prev, logs: [...prev.logs, `Error: ${data.error}`] }));
               }
             } catch (e) {
               console.error('Error parsing stream data', e);
@@ -342,12 +364,15 @@ const TripDetail = () => {
             )}
 
             {/* Categories */}
-            {researchState.categories.length > 0 && (
-              <div className="flex gap-2 flex-wrap">
-                {researchState.categories.map((cat, i) => (
-                   <span key={i} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                     {cat}
-                   </span>
+            {researchState.findings.length > 0 && (
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                {researchState.findings.map((finding, i) => (
+                   <Card key={i} className="min-w-[300px] max-w-[300px]">
+                      <h4 className="font-bold text-lg mb-2">{finding.category}</h4>
+                      <div className="text-sm text-gray-700 h-40 overflow-y-auto whitespace-pre-line">
+                        {finding.content}
+                      </div>
+                   </Card>
                 ))}
               </div>
             )}
@@ -361,19 +386,21 @@ const TripDetail = () => {
               </Card>
             )}
 
-            {/* Detailed Findings (Accordion style or list) */}
+            {/* Detailed Findings - Hidden since we show them in horizontal scroll above, or keep as fallback */}
+            {/* 
             {researchState.findings.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Detailed Findings</h3>
                 {researchState.findings.map((finding, i) => (
                   <Card key={i}>
                     <div className="whitespace-pre-line text-sm text-gray-700">
-                      {finding}
+                      {finding.content || finding}
                     </div>
                   </Card>
                 ))}
               </div>
             )}
+            */}
           </div>
         )}
 
