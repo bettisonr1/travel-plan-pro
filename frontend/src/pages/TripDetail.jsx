@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import tripService from '../services/tripService';
 import Card from '../components/Card';
+import CollapsibleCard from '../components/CollapsibleCard';
 import Button from '../components/Button';
 import ManageUsersModal from '../components/ManageUsersModal';
 import MessageBoard from '../components/MessageBoard';
@@ -368,12 +369,11 @@ const TripDetail = () => {
             {researchState.findings.length > 0 && (
               <div className="flex gap-4 overflow-x-auto pb-4">
                 {researchState.findings.map((finding, i) => (
-                   <Card key={i} className="min-w-[300px] max-w-[300px]">
-                      <h4 className="font-bold text-lg mb-2">{finding.category}</h4>
+                   <CollapsibleCard key={i} title={finding.category} className="min-w-[300px] max-w-[300px]">
                       <div className="text-sm text-gray-700 h-40 overflow-y-auto">
                         <ReactMarkdown>{finding.content}</ReactMarkdown>
                       </div>
-                   </Card>
+                   </CollapsibleCard>
                 ))}
               </div>
             )}
