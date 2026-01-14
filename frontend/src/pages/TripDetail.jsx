@@ -175,11 +175,22 @@ const TripDetail = () => {
               
               if (data.type === 'token') {
                   const content = data.content;
-                  const tags = data.tags || [];
-                  // Find category from tags if available
-                  const category = tags.find(t => t !== 'summary'); // assuming non-summary tags are categories
+                  // Prefer explicit category/isSummary from metadata
+                  let category = data.category;
+                  const isSummary = data.isSummary;
                   
-                  if (data.node === 'researcher' && category) {
+                  // Fallback to tags if metadata missing
+                  if (!category && !isSummary) {
+                       const tags = data.tags || [];
+                       category = tags.find(t => t !== 'summary');
+                  }
+
+                  if (isSummary || data.node === 'summariser') {
+                       setResearchState(prev => ({
+                          ...prev,
+                          summary: prev.summary + content
+                      }));
+                  } else if (category && data.node === 'researcher') {
                        setResearchState(prev => {
                            const existingFindingIndex = prev.findings.findIndex(f => f.category === category);
                            let newFindings = [...prev.findings];
@@ -195,11 +206,6 @@ const TripDetail = () => {
                            
                            return { ...prev, findings: newFindings };
                        });
-                  } else if (data.node === 'summariser') {
-                      setResearchState(prev => ({
-                          ...prev,
-                          summary: prev.summary + content
-                      }));
                   }
               }
 
