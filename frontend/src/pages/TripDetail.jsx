@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 import tripService from '../services/tripService';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -369,8 +370,8 @@ const TripDetail = () => {
                 {researchState.findings.map((finding, i) => (
                    <Card key={i} className="min-w-[300px] max-w-[300px]">
                       <h4 className="font-bold text-lg mb-2">{finding.category}</h4>
-                      <div className="text-sm text-gray-700 h-40 overflow-y-auto whitespace-pre-line">
-                        {finding.content}
+                      <div className="text-sm text-gray-700 h-40 overflow-y-auto">
+                        <ReactMarkdown>{finding.content}</ReactMarkdown>
                       </div>
                    </Card>
                 ))}
@@ -380,8 +381,8 @@ const TripDetail = () => {
             {/* Summary Result */}
             {researchState.summary && (
               <Card title="Executive Summary">
-                <div className="prose max-w-none text-gray-800 whitespace-pre-line">
-                  {researchState.summary}
+                <div className="prose max-w-none text-gray-800">
+                  <ReactMarkdown>{researchState.summary}</ReactMarkdown>
                 </div>
               </Card>
             )}
