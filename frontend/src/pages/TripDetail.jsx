@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 import tripService from '../services/tripService';
 import Card from '../components/Card';
+import CollapsibleCard from '../components/CollapsibleCard';
 import Button from '../components/Button';
 import ManageUsersModal from '../components/ManageUsersModal';
 import MessageBoard from '../components/MessageBoard';
@@ -118,6 +120,20 @@ const TripDetail = () => {
     summary: '',
     isResearching: false
   });
+  
+  // Initialize state with existing trip data if available
+  useEffect(() => {
+    if (trip) {
+      setResearchState(prev => ({
+        ...prev,
+        // If we have saved research findings, use them
+        findings: trip.researchFindings || [],
+        summary: trip.researchSummary || '',
+        // If we have points of interest, use them as categories initially (or load from research if we tracked that separately)
+        categories: trip.pointsOfInterest || []
+      }));
+    }
+  }, [trip]);
 
   const handleStartResearch = async () => {
     setResearchState(prev => ({ ...prev, isResearching: true, logs: ['Starting research workflow...'], summary: '' }));
@@ -126,7 +142,7 @@ const TripDetail = () => {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = user?.token;
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/trips/${trip._id}/research`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/ai/${trip._id}/deep-research`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -154,28 +170,65 @@ const TripDetail = () => {
               const data = JSON.parse(dataStr);
               
               // Handle different state updates from LangGraph
-              if (data.categories) {
-                setResearchState(prev => ({
-                  ...prev,
-                  categories: data.categories,
-                  logs: [...prev.logs, `identified categories: ${data.categories.join(', ')}`]
-                }));
+              // Note: our current graph logic doesn't explicitly return 'categories' in the stream events 
+              // like the previous mock did, but we can infer or display what we get.
+              
+              if (data.type === 'token') {
+                  const content = data.content;
+                  // Prefer explicit category/isSummary from metadata
+                  let category = data.category;
+                  const isSummary = data.isSummary;
+                  
+                  // Fallback to tags if metadata missing
+                  if (!category && !isSummary) {
+                       const tags = data.tags || [];
+                       category = tags.find(t => t !== 'summary');
+                  }
+
+                  if (isSummary || data.node === 'summariser') {
+                       setResearchState(prev => ({
+                          ...prev,
+                          summary: prev.summary + content
+                      }));
+                  } else if (category && data.node === 'researcher') {
+                       setResearchState(prev => {
+                           const existingFindingIndex = prev.findings.findIndex(f => f.category === category);
+                           let newFindings = [...prev.findings];
+                           
+                           if (existingFindingIndex >= 0) {
+                               newFindings[existingFindingIndex] = {
+                                   ...newFindings[existingFindingIndex],
+                                   content: newFindings[existingFindingIndex].content + content
+                               };
+                           } else {
+                               newFindings.push({ category, content });
+                           }
+                           
+                           return { ...prev, findings: newFindings };
+                       });
+                  }
+              }
+
+              if (data.researcher && data.researcher.research) {
+                 // Fallback or completion update if needed
               }
               
-              if (data.findings) {
-                 setResearchState(prev => ({
-                  ...prev,
-                  findings: [...prev.findings, ...data.findings],
-                  logs: [...prev.logs, `Research completed for a batch of categories`]
-                }));
+              if (data.type === 'node_complete') {
+                  if (data.node === 'researcher') {
+                       setResearchState(prev => ({
+                          ...prev,
+                           logs: [...prev.logs, `Completed research step`]
+                       }));
+                  } else if (data.node === 'summariser') {
+                       setResearchState(prev => ({
+                          ...prev,
+                           logs: [...prev.logs, `Summary generated!`]
+                       }));
+                  }
               }
               
-              if (data.summary) {
-                setResearchState(prev => ({
-                  ...prev,
-                  summary: data.summary,
-                  logs: [...prev.logs, 'Summary generated!']
-                }));
+              if (data.error) {
+                 setResearchState(prev => ({ ...prev, logs: [...prev.logs, `Error: ${data.error}`] }));
               }
             } catch (e) {
               console.error('Error parsing stream data', e);
@@ -342,12 +395,14 @@ const TripDetail = () => {
             )}
 
             {/* Categories */}
-            {researchState.categories.length > 0 && (
-              <div className="flex gap-2 flex-wrap">
-                {researchState.categories.map((cat, i) => (
-                   <span key={i} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                     {cat}
-                   </span>
+            {researchState.findings.length > 0 && (
+              <div className="space-y-6">
+                {researchState.findings.map((finding, i) => (
+                   <CollapsibleCard key={i} title={finding.category} className="w-full">
+                      <div className="text-sm text-gray-700">
+                        <ReactMarkdown>{finding.content}</ReactMarkdown>
+                      </div>
+                   </CollapsibleCard>
                 ))}
               </div>
             )}
@@ -355,25 +410,27 @@ const TripDetail = () => {
             {/* Summary Result */}
             {researchState.summary && (
               <Card title="Executive Summary">
-                <div className="prose max-w-none text-gray-800 whitespace-pre-line">
-                  {researchState.summary}
+                <div className="prose max-w-none text-gray-800">
+                  <ReactMarkdown>{researchState.summary}</ReactMarkdown>
                 </div>
               </Card>
             )}
 
-            {/* Detailed Findings (Accordion style or list) */}
+            {/* Detailed Findings - Hidden since we show them in horizontal scroll above, or keep as fallback */}
+            {/* 
             {researchState.findings.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Detailed Findings</h3>
                 {researchState.findings.map((finding, i) => (
                   <Card key={i}>
                     <div className="whitespace-pre-line text-sm text-gray-700">
-                      {finding}
+                      {finding.content || finding}
                     </div>
                   </Card>
                 ))}
               </div>
             )}
+            */}
           </div>
         )}
 

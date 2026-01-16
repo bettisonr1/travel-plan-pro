@@ -3,6 +3,8 @@ const { HumanMessage, SystemMessage } = require("@langchain/core/messages");
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const { graph } = require('../agents/researchGraph');
+const TripService = require('../services/TripService');
 
 const CATEGORIES = [
   'Adventure', 'Relaxation', 'Culture', 'Food & Drink', 
@@ -72,6 +74,109 @@ exports.suggestTripDetails = async (req, res) => {
   } catch (error) {
     console.error("AI Suggestion Error:", error);
     res.status(500).json({ success: false, message: "Failed to generate suggestions" });
+  }
+};
+
+exports.performDeepResearch = async (req, res) => {
+  const { id } = req.params;
+
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  try {
+    const trip = await TripService.getTripById(id);
+
+    const inputs = {
+      destination: trip.destination,
+      categories: trip.pointsOfInterest || [], // Assuming pointsOfInterest are the categories
+    };
+    
+    if (inputs.categories.length === 0) {
+      // Default categories if none exist
+      inputs.categories = ['General', 'Attractions', 'Food'];
+    }
+
+    const stream = await graph.streamEvents(inputs, {
+        version: "v2"
+    });
+
+    // Accumulated results to save later
+    let researchResults = [];
+    let summaryResult = '';
+
+    for await (const event of stream) {
+      // Filter for LLM streaming events to send token by token
+      if (event.event === "on_chat_model_stream") {
+          const chunk = event.data.chunk;
+          if (chunk && chunk.content) {
+              // Extract category from metadata if available
+              const category = event.metadata?.category;
+              const isSummary = event.metadata?.type === 'summary' || (event.tags && event.tags.includes('summary'));
+              
+              res.write(`data: ${JSON.stringify({ 
+                  type: 'token', 
+                  content: chunk.content, 
+                  node: event.metadata?.langgraph_node,
+                  category: category,
+                  isSummary: isSummary,
+                  tags: event.tags || []
+              })}\n\n`);
+          }
+      }
+      
+      // Keep existing logic for state updates (on_chain_end or on_node_end) to capture final results for DB
+      if (event.event === "on_chain_end" && event.name === "researcher") {
+          // event.data.output would be { research: [...] }
+          if (event.data.output && event.data.output.research) {
+             event.data.output.research.forEach(content => {
+                 const match = content.match(/^###\s+(.*?)(\n|$)/);
+                 const category = match ? match[1].trim() : 'General';
+                 
+                 // Update our accumulator
+                 const existingIndex = researchResults.findIndex(r => r.category === category);
+                 if (existingIndex >= 0) {
+                     researchResults[existingIndex].content = content;
+                 } else {
+                     researchResults.push({ category, content });
+                 }
+             });
+             
+             // Send "complete" message for a node so UI knows to finalize
+             res.write(`data: ${JSON.stringify({ 
+                type: 'node_complete', 
+                node: event.name,
+                output: event.data.output
+            })}\n\n`);
+          }
+      }
+
+      if (event.event === "on_chain_end" && event.name === "summariser") {
+          if (event.data.output && event.data.output.summary) {
+              summaryResult = event.data.output.summary;
+              
+              res.write(`data: ${JSON.stringify({ 
+                type: 'node_complete', 
+                node: event.name,
+                output: event.data.output
+            })}\n\n`);
+          }
+      }
+    }
+
+    // Save to database
+    await TripService.updateTrip(id, {
+        researchFindings: researchResults,
+        researchSummary: summaryResult
+    });
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (error) {
+    console.error('Error in deep research:', error);
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+    res.end();
   }
 };
 

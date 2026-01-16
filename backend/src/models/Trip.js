@@ -29,6 +29,14 @@ const tripSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  researchFindings: [{
+    category: String,
+    content: String
+  }],
+  researchSummary: {
+    type: String,
+    default: ''
+  },
   messages: [{
     text: {
       type: String,
