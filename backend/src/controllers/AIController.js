@@ -131,8 +131,8 @@ exports.performDeepResearch = async (req, res) => {
           // event.data.output would be { research: [...] }
           if (event.data.output && event.data.output.research) {
              event.data.output.research.forEach(content => {
-                 const match = content.match(/^### (.*)\n\n/);
-                 const category = match ? match[1] : 'General';
+                 const match = content.match(/^###\s+(.*?)(\n|$)/);
+                 const category = match ? match[1].trim() : 'General';
                  
                  // Update our accumulator
                  const existingIndex = researchResults.findIndex(r => r.category === category);

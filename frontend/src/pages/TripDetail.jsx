@@ -396,10 +396,10 @@ const TripDetail = () => {
 
             {/* Categories */}
             {researchState.findings.length > 0 && (
-              <div className="flex gap-4 overflow-x-auto pb-4">
+              <div className="space-y-6">
                 {researchState.findings.map((finding, i) => (
-                   <CollapsibleCard key={i} title={finding.category} className="min-w-[300px] max-w-[300px]">
-                      <div className="text-sm text-gray-700 h-40 overflow-y-auto">
+                   <CollapsibleCard key={i} title={finding.category} className="w-full">
+                      <div className="text-sm text-gray-700">
                         <ReactMarkdown>{finding.content}</ReactMarkdown>
                       </div>
                    </CollapsibleCard>

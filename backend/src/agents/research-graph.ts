@@ -1,8 +1,6 @@
-import { AIMessageChunk, MessageStructure } from "@langchain/core/messages";
 import {Annotation, StateGraph, 
     START, END, Send} from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
-import { z } from "zod";
 
 const llm = new ChatOpenAI({model: "gpt-4o", temperature: 0});
 
@@ -40,44 +38,39 @@ const researcher = async (state: {"category": string, "destination": string}) =>
     const prompt = `
     You are an expert travel researcher tasked with researching {destination} 
     with a specific focus on {category}.
+    
+    Start your response with the category name as a markdown header (e.g., "### {category}").
+    Provide your findings in Markdown format. Do not wrap the output in JSON or code blocks.
     `;
 
-    const schema = z.object({
-        research: z.string().describe("The research findings for the category and destination.")
-    });
-
-    const structuredLlm = llm.withStructuredOutput(schema);
-    const research = await structuredLlm.invoke(
+    const response = await llm.invoke(
         prompt.replace("{destination}", state.destination).replace("{category}", state.category)
     );
 
-    return {research: [research.research]};
+    return {research: [response.content as string]};
 }
 
 const summariser = async (state: typeof ResearchState.State) => {
 
     var formattedResearch = '';
     for (const work of state.research) {
-        formattedResearch += "------";
+        formattedResearch += "------\n";
         formattedResearch += work;
+        formattedResearch += "\n";
     }
 
     const prompt = `
     You are an AI tasked with summarising the travel research {state.destination}.
     Previous agents have performed the specific research available in {formattedResearch}
+
+    Provide the summary in Markdown format. Do not wrap the output in JSON or code blocks.
     `;
 
-    const schema = z.object({
-        summary: z.string().describe("The summary given the research findings.")
-    });
-
-    const structuredLlm = llm.withStructuredOutput(schema);
-    const summary = await structuredLlm.invoke(
+    const response = await llm.invoke(
         prompt.replace("{destination}", state.destination).replace("{formattedResearch}", formattedResearch)
     );
-
     
-    return {summary: summary}
+    return {summary: response.content as string}
 }
 
 export const graph = graphBuilder

@@ -31,14 +31,13 @@ const researcher = async (state) => {
     const prompt = `
     You are an expert travel researcher tasked with researching ${state.destination} 
     with a specific focus on ${state.category}.
+    
+    Start your response with the category name as a markdown header (e.g., "### ${state.category}").
+    Provide your findings in Markdown format. Do not wrap the output in JSON or code blocks.
     `;
 
-    const schema = z.object({
-        research: z.string().describe("The research findings for the category and destination.")
-    });
-
     // We pass tags and metadata to help identify the stream events
-    const research = await structuredLlm.invoke(
+    const response = await llm.invoke(
         prompt,
         { 
             tags: [state.category],
@@ -46,15 +45,7 @@ const researcher = async (state) => {
         }
     );
 
-    // Return an object that matches the state update we want
-    // Note: The original TS used {research: [research.research]}, but we need to capture category too ideally
-    // for the UI. However, the reduce function just concatenates strings. 
-    // To support the UI requirement "horizontal section containing different category generations",
-    // we might want to structure the research output differently or rely on the fact that
-    // we get stream events for each node.
-    // For now I'll stick close to the original design but formatted for JS.
-    
-    return { research: [`### ${state.category}\n\n${research.research}`] };
+    return { research: [response.content] };
 }
 
 const summariser = async (state) => {
@@ -69,23 +60,19 @@ const summariser = async (state) => {
     You are an AI tasked with summarising the travel research ${state.destination}.
     Previous agents have performed the specific research available in:
     ${formattedResearch}
+
+    Provide the summary in Markdown format. Do not wrap the output in JSON or code blocks.
     `;
 
-    const schema = z.object({
-        summary: z.string().describe("The summary given the research findings.")
-    });
-
-    const structuredLlm = llm.withStructuredOutput(schema);
-    const summary = await structuredLlm.invoke(
+    const response = await llm.invoke(
         prompt,
         { 
             tags: ["summary"],
             metadata: { type: "summary" }
         }
     );
-
     
-    return { summary: summary.summary }
+    return { summary: response.content }
 }
 
 const graphBuilder = new StateGraph(ResearchState)
