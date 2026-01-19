@@ -90,7 +90,7 @@ const Layout = ({ children, user, onLogout }) => {
         </header>
         {children}
         <footer className="mt-20 text-center text-gray-400 text-sm">
-          <p>Built with Controller-Service-Repository-Model pattern</p>
+          <p>An agentic application built by Rob Bettison (with some help from Cursor).</p>
         </footer>
       </div>
     </div>

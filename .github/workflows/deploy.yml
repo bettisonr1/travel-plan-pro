@@ -1,0 +1,110 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_VAR_project_name: travel-plan
+  TF_VAR_environment: dev
+
+jobs:
+  infrastructure:
+    name: Provision Infrastructure
+    runs-on: ubuntu-latest
+    outputs:
+      acr_login_server: ${{ steps.tf_out.outputs.acr_login_server }}
+      backend_url: ${{ steps.tf_out.outputs.backend_url }}
+      resource_group_name: ${{ steps.tf_out.outputs.resource_group_name }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false # Needed for proper output parsing
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+        env:
+          ARM_ACCESS_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
+        # Note: In a production environment, you should configure a remote backend here
+        # to persist state. Currently, this uses local state which is lost after the job.
+
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: terraform apply -auto-approve
+
+      - name: Get Terraform Outputs
+        id: tf_out
+        working-directory: ./terraform
+        run: |
+          echo "acr_login_server=$(terraform output -raw acr_login_server)" >> $GITHUB_OUTPUT
+          echo "backend_url=$(terraform output -raw backend_url)" >> $GITHUB_OUTPUT
+          echo "resource_group_name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
+
+  build-and-deploy:
+    name: Build and Deploy
+    needs: infrastructure
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ needs.infrastructure.outputs.acr_login_server }}
+
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ needs.infrastructure.outputs.acr_login_server }}/backend:${{ github.sha }}
+
+      - name: Build and Push Frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ needs.infrastructure.outputs.acr_login_server }}/frontend:${{ github.sha }}
+          build-args: |
+            VITE_API_URL=${{ needs.infrastructure.outputs.backend_url }}/api
+
+      - name: Update Backend Container App
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az containerapp update \
+              --name travel-plan-backend \
+              --resource-group ${{ needs.infrastructure.outputs.resource_group_name }} \
+              --image ${{ needs.infrastructure.outputs.acr_login_server }}/backend:${{ github.sha }} \
+              --set-env-vars JWT_SECRET=${{ secrets.JWT_SECRET }} OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+
+      - name: Update Frontend Container App
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az containerapp update \
+              --name travel-plan-frontend \
+              --resource-group ${{ needs.infrastructure.outputs.resource_group_name }} \
+              --image ${{ needs.infrastructure.outputs.acr_login_server }}/frontend:${{ github.sha }}
+
