@@ -21,6 +21,7 @@ jobs:
       acr_login_server: ${{ steps.tf_out.outputs.acr_login_server }}
       backend_url: ${{ steps.tf_out.outputs.backend_url }}
       resource_group_name: ${{ steps.tf_out.outputs.resource_group_name }}
+      frontend_url: ${{ steps.tf_out.outputs.frontend_url }}
     
     steps:
       - name: Checkout
@@ -100,7 +101,7 @@ jobs:
               --name travel-plan-backend \
               --resource-group ${{ needs.infrastructure.outputs.resource_group_name }} \
               --image ${{ needs.infrastructure.outputs.acr_login_server }}/backend:${{ github.sha }} \
-              --set-env-vars JWT_SECRET=${{ secrets.JWT_SECRET }} OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+              --set-env-vars JWT_SECRET=${{ secrets.JWT_SECRET }} OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} FRONTEND_URL=${{ needs.infrastructure.outputs.frontend_url }}
 
       - name: Update Frontend Container App
         uses: azure/CLI@v1
