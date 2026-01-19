@@ -1,4 +1,5 @@
 const TripService = require('../services/TripService');
+const StorageService = require('../services/StorageService');
 const { agentFactory } = require('../agents/agentFactory');
 
 class TripController {
@@ -39,6 +40,24 @@ class TripController {
     } catch (error) {
       const status = error.message === 'Trip not found' ? 404 : 500;
       res.status(status).json({ success: false, error: error.message });
+    }
+  }
+
+  async uploadImage(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No image file provided' });
+      }
+
+      const imageUrl = await StorageService.uploadImage(req.file);
+      
+      // Update trip with new image URL
+      const trip = await TripService.updateTrip(req.params.id, { thumbnailUrl: imageUrl });
+      
+      res.status(200).json({ success: true, data: trip });
+    } catch (error) {
+      console.error('Error in uploadImage:', error);
+      res.status(500).json({ success: false, error: error.message });
     }
   }
 

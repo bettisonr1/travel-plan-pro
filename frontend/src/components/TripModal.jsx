@@ -243,7 +243,7 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
                     <div className="flex flex-col space-y-2">
                          {formData.thumbnailUrl && (
                              <img 
-                                src={`http://localhost:5001${formData.thumbnailUrl}`} 
+                                src={formData.thumbnailUrl.startsWith('http') ? formData.thumbnailUrl : `http://localhost:5001${formData.thumbnailUrl}`} 
                                 alt="Trip Thumbnail" 
                                 className="w-full h-32 object-cover rounded-md mb-2"
                              />

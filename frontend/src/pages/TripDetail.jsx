@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import tripService from '../services/tripService';
@@ -17,6 +17,7 @@ const TripDetail = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isManageUsersOpen, setIsManageUsersOpen] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchTrip = async () => {
@@ -110,6 +111,33 @@ const TripDetail = () => {
       // Optional: Add toast or error message state here
     } finally {
       setGeneratingImage(false);
+    }
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        alert('Please upload an image file');
+        return;
+    }
+
+    setGeneratingImage(true);
+    try {
+        const response = await tripService.uploadImage(trip._id, file);
+        if (response.success) {
+            setTrip(response.data);
+        }
+    } catch (error) {
+        console.error('Failed to upload image', error);
+        alert('Failed to upload image');
+    } finally {
+        setGeneratingImage(false);
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     }
   };
 
@@ -257,9 +285,9 @@ const TripDetail = () => {
       </div>
 
       {trip.thumbnailUrl && (
-          <div className="w-full h-64 rounded-xl overflow-hidden shadow-lg relative">
+          <div className="w-full h-64 rounded-xl overflow-hidden shadow-lg relative group">
               <img 
-                  src={`http://localhost:5001${trip.thumbnailUrl}`} 
+                  src={trip.thumbnailUrl.startsWith('http') ? trip.thumbnailUrl : `http://localhost:5001${trip.thumbnailUrl}`} 
                   alt={trip.destination} 
                   className="w-full h-full object-cover"
               />
@@ -267,8 +295,25 @@ const TripDetail = () => {
               <h1 className="absolute bottom-6 left-6 text-4xl font-bold text-white drop-shadow-md">
                 {trip.destination}
               </h1>
+              <button 
+                onClick={() => fileInputRef.current.click()}
+                className="absolute top-4 right-4 bg-white/80 hover:bg-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Change Image"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </button>
           </div>
       )}
+
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleImageUpload} 
+        className="hidden" 
+        accept="image/*"
+      />
 
       {/* Header Section (Title + Generate Button) - Only shown if no thumbnail */ }
       {!trip.thumbnailUrl && (
@@ -281,6 +326,13 @@ const TripDetail = () => {
               disabled={generatingImage}
             >
               {generatingImage ? 'Generating...' : 'Generate Thumbnail'}
+            </Button>
+            <Button 
+              onClick={() => fileInputRef.current.click()}
+              variant="secondary"
+              disabled={generatingImage}
+            >
+              Upload Image
             </Button>
           </div>
         </div>
