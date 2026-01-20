@@ -24,3 +24,11 @@ output "frontend_url" {
   value = "https://${azurerm_container_app.frontend.ingress[0].fqdn}"
 }
 
+output "storage_account_name" {
+  value = azurerm_storage_account.app_storage.name
+}
+
+output "storage_container_name" {
+  value = azurerm_storage_container.images.name
+}
+

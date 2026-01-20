@@ -79,6 +79,21 @@ resource "azurerm_cosmosdb_mongo_database" "mongodb" {
   account_name        = azurerm_cosmosdb_account.db.name
 }
 
+# Storage Account for Images
+resource "azurerm_storage_account" "app_storage" {
+  name                     = replace("${var.project_name}${var.environment}st", "-", "")
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_storage_container" "images" {
+  name                  = "trip-images"
+  storage_account_name  = azurerm_storage_account.app_storage.name
+  container_access_type = "blob"
+}
+
 # Backend Container App
 resource "azurerm_container_app" "backend" {
   name                         = "${var.project_name}-backend"
@@ -113,6 +128,14 @@ resource "azurerm_container_app" "backend" {
         name = "FRONTEND_URL"
         value = var.frontend_app_url
       }
+      env {
+        name = "AZURE_STORAGE_CONNECTION_STRING"
+        secret_name = "storage-connection-string"
+      }
+      env {
+        name = "AZURE_STORAGE_CONTAINER_NAME"
+        value = azurerm_storage_container.images.name
+      }
     }
   }
 
@@ -144,6 +167,11 @@ resource "azurerm_container_app" "backend" {
   secret {
     name  = "jwt-secret"
     value = var.jwt_secret
+  }
+
+  secret {
+    name  = "storage-connection-string"
+    value = azurerm_storage_account.app_storage.primary_connection_string
   }
 
   # removed lifecycle ignore changes for image to allow terraform to update it

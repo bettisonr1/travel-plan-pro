@@ -60,6 +60,17 @@ const tripService = {
     const response = await api.post('/ai/generate-logo');
     return response.data;
   },
+
+  uploadImage: async (id, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await api.post(`/trips/${id}/image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 export default tripService;
