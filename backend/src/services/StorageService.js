@@ -1,6 +1,6 @@
 const { BlobServiceClient } = require('@azure/storage-blob');
 const path = require('path');
-const crypto = require('crypto');
+const cryptoModule = require('node:crypto');
 
 class StorageService {
   constructor() {
@@ -27,7 +27,7 @@ class StorageService {
     }
 
     const fileExtension = path.extname(file.originalname);
-    const fileName = `${crypto.randomBytes(16).toString('hex')}${fileExtension}`;
+    const fileName = `${cryptoModule.randomBytes(16).toString('hex')}${fileExtension}`;
     const blockBlobClient = this.containerClient.getBlockBlobClient(fileName);
 
     try {
