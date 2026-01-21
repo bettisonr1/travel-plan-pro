@@ -5,6 +5,7 @@ const path = require('path');
 const https = require('https');
 const { graph } = require('../agents/researchGraph');
 const TripService = require('../services/TripService');
+const StorageService = require('../services/StorageService');
 
 const CATEGORIES = [
   'Adventure', 'Relaxation', 'Culture', 'Food & Drink', 
@@ -236,36 +237,35 @@ async function generateAndSaveImage(res, prompt, prefix) {
 
     const imageUrl = data.data[0].url;
 
-    // 2. Download and Save Image Locally
-    const filename = `${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
-    const uploadDir = path.join(__dirname, '../../public/uploads');
-    const filepath = path.join(uploadDir, filename);
-
-    // Ensure directory exists (redundant check but safe)
-    if (!fs.existsSync(uploadDir)){
-        fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    const file = fs.createWriteStream(filepath);
-
+    // 2. Download and Upload to Azure Blob Storage
     https.get(imageUrl, function(response) {
-      response.pipe(file);
+      const chunks = [];
+      response.on('data', chunk => chunks.push(chunk));
+      
+      response.on('end', async () => {
+        try {
+          const buffer = Buffer.concat(chunks);
+          
+          // Create file object compatible with StorageService
+          const file = {
+            originalname: `${prefix}.png`,
+            buffer: buffer,
+            mimetype: 'image/png'
+          };
 
-      file.on('finish', () => {
-        file.close();
-        
-        // 3. Return the local URL
-        // We return the relative path that matches our express.static config
-        const localUrl = `/uploads/${filename}`;
-        
-        res.status(200).json({
-          success: true,
-          imageUrl: localUrl
-        });
+          const azureUrl = await StorageService.uploadImage(file);
+          
+          res.status(200).json({
+            success: true,
+            imageUrl: azureUrl
+          });
+        } catch (error) {
+          console.error("Error uploading generated image:", error);
+          res.status(500).json({ success: false, message: "Failed to upload generated image" });
+        }
       });
     }).on('error', function(err) {
-      fs.unlink(filepath);
-      console.error("Error downloading image:", err);
-      res.status(500).json({ success: false, message: "Failed to save image" });
+      console.error("Error downloading image from OpenAI:", err);
+      res.status(500).json({ success: false, message: "Failed to process generated image" });
     });
 }
