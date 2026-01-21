@@ -20,8 +20,12 @@ const Layout = ({ children, user, onLogout }) => {
     try {
         const response = await tripService.generateLogo();
         if (response.success && response.imageUrl) {
-            const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5001/api').replace('/api', '');
-            setLogoUrl(`${baseUrl}${response.imageUrl}`);
+            if (response.imageUrl.startsWith('http')) {
+                setLogoUrl(response.imageUrl);
+            } else {
+                const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5001/api').replace('/api', '');
+                setLogoUrl(`${baseUrl}${response.imageUrl}`);
+            }
         }
     } catch (error) {
         console.error("Failed to generate logo", error);

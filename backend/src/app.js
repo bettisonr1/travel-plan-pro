@@ -1,6 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+
+// Load env vars immediately
+dotenv.config();
+
 const itemRoutes = require('./routes/itemRoutes');
 const tripRoutes = require('./routes/tripRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -8,19 +12,16 @@ const aiRoutes = require('./routes/aiRoutes');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, '../public/uploads');
-if (!fs.existsSync(uploadDir)){
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Load env vars
-dotenv.config();
+// Ensure uploads directory exists - REMOVED for Azure Blob Storage
+// const uploadDir = path.join(__dirname, '../public/uploads');
+// if (!fs.existsSync(uploadDir)){
+//     fs.mkdirSync(uploadDir, { recursive: true });
+// }
 
 const app = express();
 
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+// Serve static files - REMOVED for Azure Blob Storage
+// app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Body parser
 app.use(express.json());

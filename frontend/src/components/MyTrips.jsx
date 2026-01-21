@@ -174,7 +174,7 @@ const MyTrips = () => {
                       <div className="flex-shrink-0 mr-4 w-16 h-16 flex items-center justify-center">
                         {trip.thumbnailUrl ? (
                             <img 
-                              src={`http://localhost:5001${trip.thumbnailUrl}`} 
+                              src={trip.thumbnailUrl.startsWith('http') ? trip.thumbnailUrl : `http://localhost:5001${trip.thumbnailUrl}`} 
                               alt={trip.destination} 
                               className="h-16 w-16 rounded-lg object-cover"
                             />
