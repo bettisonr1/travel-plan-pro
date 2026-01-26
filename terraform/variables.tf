@@ -16,22 +16,10 @@ variable "location" {
   default     = "eastus"
 }
 
-variable "backend_image" {
-  description = "The container image for the backend"
+variable "app_image" {
+  description = "The container image for the application"
   type        = string
   default     = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
-}
-
-variable "frontend_image" {
-  description = "The container image for the frontend"
-  type        = string
-  default     = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
-}
-
-variable "frontend_app_url" {
-  description = "The URL of the frontend application (to avoid circular dependency during initial deploy)"
-  type        = string
-  default     = ""
 }
 
 variable "openai_api_key" {

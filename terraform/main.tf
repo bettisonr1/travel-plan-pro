@@ -94,17 +94,17 @@ resource "azurerm_storage_container" "images" {
   container_access_type = "blob"
 }
 
-# Backend Container App
-resource "azurerm_container_app" "backend" {
-  name                         = "${var.project_name}-backend"
+# Unified Application Container App
+resource "azurerm_container_app" "app" {
+  name                         = "${var.project_name}-app"
   container_app_environment_id = azurerm_container_app_environment.env.id
   resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
   template {
     container {
-      name   = "backend"
-      image  = var.backend_image
+      name   = "app"
+      image  = var.app_image
       cpu    = 0.5
       memory = "1.0Gi"
 
@@ -123,10 +123,6 @@ resource "azurerm_container_app" "backend" {
       env {
         name  = "JWT_SECRET"
         secret_name = "jwt-secret"
-      }
-      env {
-        name = "FRONTEND_URL"
-        value = var.frontend_app_url
       }
       env {
         name = "AZURE_STORAGE_CONNECTION_STRING"
@@ -177,46 +173,3 @@ resource "azurerm_container_app" "backend" {
   # removed lifecycle ignore changes for image to allow terraform to update it
 }
 
-# Frontend Container App
-resource "azurerm_container_app" "frontend" {
-  name                         = "${var.project_name}-frontend"
-  container_app_environment_id = azurerm_container_app_environment.env.id
-  resource_group_name          = azurerm_resource_group.rg.name
-  revision_mode                = "Single"
-
-  template {
-    container {
-      name   = "frontend"
-      image  = var.frontend_image
-      cpu    = 0.25
-      memory = "0.5Gi"
-      
-      env {
-          name = "VITE_API_URL"
-          value = "https://${azurerm_container_app.backend.ingress[0].fqdn}"
-      }
-    }
-  }
-
-  ingress {
-    external_enabled = true
-    target_port      = 80
-    traffic_weight {
-      percentage = 100
-      latest_revision = true
-    }
-  }
-
-  registry {
-    server               = azurerm_container_registry.acr.login_server
-    username             = azurerm_container_registry.acr.admin_username
-    password_secret_name = "acr-password"
-  }
-
-  secret {
-    name  = "acr-password"
-    value = azurerm_container_registry.acr.admin_password
-  }
-
-  # removed lifecycle ignore changes for image
-}
