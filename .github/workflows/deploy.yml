@@ -19,9 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       acr_login_server: ${{ steps.tf_out.outputs.acr_login_server }}
-      backend_url: ${{ steps.tf_out.outputs.backend_url }}
       resource_group_name: ${{ steps.tf_out.outputs.resource_group_name }}
-      frontend_url: ${{ steps.tf_out.outputs.frontend_url }}
+      app_url: ${{ steps.tf_out.outputs.app_url }}
     
     steps:
       - name: Checkout
@@ -57,9 +56,8 @@ jobs:
         working-directory: ./terraform
         run: |
           echo "acr_login_server=$(terraform output -raw acr_login_server)" >> $GITHUB_OUTPUT
-          echo "backend_url=$(terraform output -raw backend_url)" >> $GITHUB_OUTPUT
           echo "resource_group_name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
-          echo "frontend_url=$(terraform output -raw frontend_url)" >> $GITHUB_OUTPUT
+          echo "app_url=$(terraform output -raw app_url)" >> $GITHUB_OUTPUT
 
   build-and-deploy:
     name: Build and Deploy
@@ -78,38 +76,21 @@ jobs:
       - name: Login to ACR
         run: az acr login --name ${{ needs.infrastructure.outputs.acr_login_server }}
 
-      - name: Build and Push Backend
+      - name: Build and Push App
         uses: docker/build-push-action@v4
         with:
-          context: ./backend
+          context: .
+          file: ./backend/Dockerfile
           push: true
-          tags: ${{ needs.infrastructure.outputs.acr_login_server }}/backend:${{ github.sha }}
+          tags: ${{ needs.infrastructure.outputs.acr_login_server }}/app:${{ github.sha }}
 
-      - name: Build and Push Frontend
-        uses: docker/build-push-action@v4
-        with:
-          context: ./frontend
-          push: true
-          tags: ${{ needs.infrastructure.outputs.acr_login_server }}/frontend:${{ github.sha }}
-          build-args: |
-            VITE_API_URL=${{ needs.infrastructure.outputs.backend_url }}/api
-
-      - name: Update Backend Container App
+      - name: Update App Container App
         uses: azure/CLI@v1
         with:
           inlineScript: |
             az containerapp update \
-              --name travel-plan-backend \
+              --name travel-plan-app \
               --resource-group ${{ needs.infrastructure.outputs.resource_group_name }} \
-              --image ${{ needs.infrastructure.outputs.acr_login_server }}/backend:${{ github.sha }} \
-              --set-env-vars JWT_SECRET=${{ secrets.JWT_SECRET }} OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} FRONTEND_URL=${{ needs.infrastructure.outputs.frontend_url }}
-
-      - name: Update Frontend Container App
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az containerapp update \
-              --name travel-plan-frontend \
-              --resource-group ${{ needs.infrastructure.outputs.resource_group_name }} \
-              --image ${{ needs.infrastructure.outputs.acr_login_server }}/frontend:${{ github.sha }}
+              --image ${{ needs.infrastructure.outputs.acr_login_server }}/app:${{ github.sha }} \
+              --set-env-vars JWT_SECRET=${{ secrets.JWT_SECRET }} OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
 
