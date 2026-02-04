@@ -34,6 +34,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Serve static files from the React frontend app
+app.use(express.static(path.join(__dirname, '../public')));
+
 // Routes
 app.use('/api/items', itemRoutes);
 app.use('/api/trips', tripRoutes);
@@ -43,6 +46,11 @@ app.use('/api/ai', aiRoutes);
 // Health check route
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP' });
+});
+
+// Anything that doesn't match the above, send back index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 module.exports = app;
