@@ -12,10 +12,11 @@ import {
   isSameDay, 
   isWithinInterval
 } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
 
-const MonthCalendar = ({ month, trips }) => {
+const MonthCalendar = ({ month, trips, onTripClick }) => {
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(monthStart);
   const startDate = startOfWeek(monthStart);
@@ -69,6 +70,7 @@ const MonthCalendar = ({ month, trips }) => {
 
     return {
       classes: `${baseClasses} ${textClasses}`,
+      trip: activeTrip,
       bgStyle: isTripDay ? (
         <div 
           className={`absolute top-0.5 bottom-0.5 opacity-90 z-[-1] shadow-sm
@@ -77,7 +79,6 @@ const MonthCalendar = ({ month, trips }) => {
             ${!isStart && !isEnd ? 'left-0 right-0' : ''}
           `} 
           style={{ backgroundColor: activeTrip.color || '#3B82F6' }}
-          title={tripTitle}
         />
       ) : null
     };
@@ -99,10 +100,20 @@ const MonthCalendar = ({ month, trips }) => {
 
       <div className="grid grid-cols-7 gap-y-1">
         {calendarDays.map((day) => {
-          const { classes, bgStyle } = getDayStyle(day);
+          const { classes, bgStyle, trip } = getDayStyle(day);
           return (
-            <div key={day.toString()} className={classes}>
+            <div 
+              key={day.toString()} 
+              className={`${classes} ${trip ? 'cursor-pointer group' : ''}`}
+              onClick={() => trip && onTripClick && onTripClick(trip._id)}
+            >
               {bgStyle}
+              {trip && (
+                <div className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-50 mb-1 pointer-events-none">
+                  {trip.destination}
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                </div>
+              )}
               <span>{format(day, dateFormat)}</span>
             </div>
           );
@@ -115,6 +126,11 @@ const MonthCalendar = ({ month, trips }) => {
 const InteractiveTripCalendar = ({ trips }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleTripClick = (tripId) => {
+    navigate(`/trips/${tripId}`);
+  };
   
   const nextMonth = (e) => {
     e.stopPropagation();
@@ -188,7 +204,7 @@ const InteractiveTripCalendar = ({ trips }) => {
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="flex-1"
                       >
-                        <MonthCalendar month={month} trips={trips} />
+                        <MonthCalendar month={month} trips={trips} onTripClick={handleTripClick} />
                       </motion.div>
                     ))}
                   </AnimatePresence>
