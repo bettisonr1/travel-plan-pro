@@ -33,6 +33,12 @@ const agentNode = async (state) => {
   const messages = [systemMessage, ...state.messages];
   const response = await model.invoke(messages);
 
+  if (response.tool_calls && response.tool_calls.length > 0) {
+    console.log("[TravelAgent] Model decided to call tools:", JSON.stringify(response.tool_calls, null, 2));
+  } else {
+    console.log("[TravelAgent] Model did not call any tools.");
+  }
+
   return { messages: [response] };
 };
 

@@ -90,6 +90,7 @@ io.on('connection', (socket) => {
       const trip = await Trip.findById(tripId);
       const context = `
       [Current Trip State]
+      Trip ID: ${tripId}
       Destination: ${trip.destination}
       Research Status: ${trip.isResearching ? 'Research in progress' : 'Idle'}
       Existing Research Categories: ${trip.researchFindings.map(f => f.category).join(', ') || 'None'}

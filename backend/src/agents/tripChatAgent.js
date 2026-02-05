@@ -36,6 +36,13 @@ const model = new ChatOpenAI({
 const agentNode = async (state) => {
   const { messages } = state;
   const response = await model.invoke(messages);
+
+  if (response.tool_calls && response.tool_calls.length > 0) {
+    console.log("[TripChatAgent] Model decided to call tools:", JSON.stringify(response.tool_calls, null, 2));
+  } else {
+    console.log("[TripChatAgent] Model did not call any tools.");
+  }
+
   return { messages: [response] };
 };
 

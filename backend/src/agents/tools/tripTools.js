@@ -8,6 +8,7 @@ const Trip = require("../../models/Trip");
  */
 const searchTrips = tool(
   async ({ query }) => {
+    console.log(`[searchTrips] Invoked with query: "${query}"`);
     try {
       const trips = await Trip.find({
         $or: [
@@ -15,8 +16,10 @@ const searchTrips = tool(
           { description: { $regex: query, $options: 'i' } }
         ]
       });
+      console.log(`[searchTrips] Found ${trips.length} trips`);
       return JSON.stringify(trips);
     } catch (error) {
+      console.error(`[searchTrips] Error:`, error);
       return `Error searching trips: ${error.message}`;
     }
   },
@@ -35,6 +38,7 @@ const searchTrips = tool(
  */
 const createTrip = tool(
   async ({ destination, startDate, endDate, description, userId, color }) => {
+    console.log(`[createTrip] Invoked with:`, { destination, startDate, endDate, userId });
     try {
       const tripData = {
         destination,
@@ -50,8 +54,10 @@ const createTrip = tool(
       }
 
       const trip = await Trip.create(tripData);
+      console.log(`[createTrip] Created trip ID: ${trip._id}`);
       return JSON.stringify(trip);
     } catch (error) {
+      console.error(`[createTrip] Error:`, error);
       return `Error creating trip: ${error.message}`;
     }
   },
@@ -75,6 +81,7 @@ const createTrip = tool(
  */
 const updateTrip = tool(
   async ({ tripId, destination, startDate, endDate, description, color }) => {
+    console.log(`[updateTrip] Invoked for tripId: ${tripId}`, { destination, startDate, endDate });
     try {
       const updates = {};
       if (destination) updates.destination = destination;
@@ -86,11 +93,14 @@ const updateTrip = tool(
       const trip = await Trip.findByIdAndUpdate(tripId, updates, { new: true });
       
       if (!trip) {
+        console.warn(`[updateTrip] Trip not found: ${tripId}`);
         return "Trip not found";
       }
       
+      console.log(`[updateTrip] Successfully updated trip: ${tripId}`);
       return JSON.stringify(trip);
     } catch (error) {
+      console.error(`[updateTrip] Error:`, error);
       return `Error updating trip: ${error.message}`;
     }
   },
@@ -98,7 +108,7 @@ const updateTrip = tool(
     name: "update_trip",
     description: "Update an existing trip's details. Use this when the user wants to change the destination, dates, or description of a specific trip identified by tripId. Returns the updated trip.",
     schema: z.object({
-      tripId: z.string().describe("The ID of the trip to update"),
+      tripId: z.string().describe("The unique MongoDB ID of the trip (e.g., '65a1b2c3d4e5f6...'). Do NOT use the trip name."),
       destination: z.string().optional().describe("The new destination"),
       startDate: z.string().optional().describe("The new start date (YYYY-MM-DD)"),
       endDate: z.string().optional().describe("The new end date (YYYY-MM-DD)"),
