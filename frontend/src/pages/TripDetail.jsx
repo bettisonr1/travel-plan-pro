@@ -6,7 +6,7 @@ import Card from '../components/Card';
 import CollapsibleCard from '../components/CollapsibleCard';
 import Button from '../components/Button';
 import ManageUsersModal from '../components/ManageUsersModal';
-import MessageBoard from '../components/MessageBoard';
+import TripChat from '../components/TripChat';
 
 const TripDetail = () => {
   const { id } = useParams();
@@ -141,137 +141,6 @@ const TripDetail = () => {
     }
   };
 
-  const [researchState, setResearchState] = useState({
-    logs: [],
-    categories: [],
-    findings: [],
-    summary: '',
-    isResearching: false
-  });
-  
-  // Initialize state with existing trip data if available
-  useEffect(() => {
-    if (trip) {
-      setResearchState(prev => ({
-        ...prev,
-        // If we have saved research findings, use them
-        findings: trip.researchFindings || [],
-        summary: trip.researchSummary || '',
-        // If we have points of interest, use them as categories initially (or load from research if we tracked that separately)
-        categories: trip.pointsOfInterest || []
-      }));
-    }
-  }, [trip]);
-
-  const handleStartResearch = async () => {
-    setResearchState(prev => ({ ...prev, isResearching: true, logs: ['Starting research workflow...'], summary: '' }));
-    
-    try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      const token = user?.token;
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/ai/${trip._id}/deep-research`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to start research');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6);
-            if (dataStr === '[DONE]') continue;
-            
-            try {
-              const data = JSON.parse(dataStr);
-              
-              // Handle different state updates from LangGraph
-              // Note: our current graph logic doesn't explicitly return 'categories' in the stream events 
-              // like the previous mock did, but we can infer or display what we get.
-              
-              if (data.type === 'token') {
-                  const content = data.content;
-                  // Prefer explicit category/isSummary from metadata
-                  let category = data.category;
-                  const isSummary = data.isSummary;
-                  
-                  // Fallback to tags if metadata missing
-                  if (!category && !isSummary) {
-                       const tags = data.tags || [];
-                       category = tags.find(t => t !== 'summary');
-                  }
-
-                  if (isSummary || data.node === 'summariser') {
-                       setResearchState(prev => ({
-                          ...prev,
-                          summary: prev.summary + content
-                      }));
-                  } else if (category && data.node === 'researcher') {
-                       setResearchState(prev => {
-                           const existingFindingIndex = prev.findings.findIndex(f => f.category === category);
-                           let newFindings = [...prev.findings];
-                           
-                           if (existingFindingIndex >= 0) {
-                               newFindings[existingFindingIndex] = {
-                                   ...newFindings[existingFindingIndex],
-                                   content: newFindings[existingFindingIndex].content + content
-                               };
-                           } else {
-                               newFindings.push({ category, content });
-                           }
-                           
-                           return { ...prev, findings: newFindings };
-                       });
-                  }
-              }
-
-              if (data.researcher && data.researcher.research) {
-                 // Fallback or completion update if needed
-              }
-              
-              if (data.type === 'node_complete') {
-                  if (data.node === 'researcher') {
-                       setResearchState(prev => ({
-                          ...prev,
-                           logs: [...prev.logs, `Completed research step`]
-                       }));
-                  } else if (data.node === 'summariser') {
-                       setResearchState(prev => ({
-                          ...prev,
-                           logs: [...prev.logs, `Summary generated!`]
-                       }));
-                  }
-              }
-              
-              if (data.error) {
-                 setResearchState(prev => ({ ...prev, logs: [...prev.logs, `Error: ${data.error}`] }));
-              }
-            } catch (e) {
-              console.error('Error parsing stream data', e);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Research error:', error);
-      setResearchState(prev => ({ ...prev, logs: [...prev.logs, `Error: ${error.message}`] }));
-    } finally {
-      setResearchState(prev => ({ ...prev, isResearching: false }));
-    }
-  };
-
   if (loading) return <div className="text-center py-10">Loading...</div>;
   if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
   if (!trip) return <div className="text-center py-10">Trip not found</div>;
@@ -341,7 +210,7 @@ const TripDetail = () => {
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          {['Overview', 'Attendees', 'Deep Research', 'To-Do List', 'Message Board'].map((tab) => {
+          {['Overview', 'Attendees', 'AI Assistant', 'To-Do List', 'Message Board'].map((tab) => {
             const tabKey = tab.toLowerCase().replace(/\s+/g, '-');
             return (
               <button
@@ -421,68 +290,49 @@ const TripDetail = () => {
           </Card>
         )}
 
-        {activeTab === 'deep-research' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Deep Research Agent</h2>
-              <Button 
-                onClick={handleStartResearch} 
-                variant="primary"
-                disabled={researchState.isResearching}
-              >
-                {researchState.isResearching ? 'Researching...' : 'Start Deep Research'}
-              </Button>
+        {activeTab === 'ai-assistant' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <TripChat 
+                tripId={trip._id} 
+                currentUser={JSON.parse(localStorage.getItem('user'))} 
+                onTripUpdate={setTrip} 
+                initialMessages={trip.messages}
+              />
             </div>
+            <div className="lg:col-span-1 space-y-4 h-[600px] overflow-y-auto pr-2">
+               <div className="sticky top-0 bg-gray-50 pb-2 z-10 mb-2 border-b border-gray-200">
+                  <h3 className="font-semibold text-gray-700">Research Findings</h3>
+                  {trip.isResearching && (
+                      <span className="text-xs text-blue-600 animate-pulse">● Researching...</span>
+                  )}
+               </div>
+               
+               {trip.researchSummary && (
+                 <Card title="Executive Summary">
+                   <div className="prose prose-sm max-w-none text-gray-800">
+                     <ReactMarkdown>{trip.researchSummary}</ReactMarkdown>
+                   </div>
+                 </Card>
+               )}
 
-            {/* Progress/Logs Area */}
-            {(researchState.logs.length > 0 || researchState.isResearching) && (
-              <Card>
-                 <div className="bg-gray-900 text-green-400 p-4 rounded-md font-mono text-sm h-48 overflow-y-auto">
-                    {researchState.logs.map((log, i) => (
-                      <div key={i}>&gt; {log}</div>
-                    ))}
-                    {researchState.isResearching && <div className="animate-pulse">&gt; _</div>}
-                 </div>
-              </Card>
-            )}
-
-            {/* Categories */}
-            {researchState.findings.length > 0 && (
-              <div className="space-y-6">
-                {researchState.findings.map((finding, i) => (
-                   <CollapsibleCard key={i} title={finding.category} className="w-full">
-                      <div className="text-sm text-gray-700">
-                        <ReactMarkdown>{finding.content}</ReactMarkdown>
-                      </div>
-                   </CollapsibleCard>
-                ))}
-              </div>
-            )}
-
-            {/* Summary Result */}
-            {researchState.summary && (
-              <Card title="Executive Summary">
-                <div className="prose max-w-none text-gray-800">
-                  <ReactMarkdown>{researchState.summary}</ReactMarkdown>
-                </div>
-              </Card>
-            )}
-
-            {/* Detailed Findings - Hidden since we show them in horizontal scroll above, or keep as fallback */}
-            {/* 
-            {researchState.findings.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Detailed Findings</h3>
-                {researchState.findings.map((finding, i) => (
-                  <Card key={i}>
-                    <div className="whitespace-pre-line text-sm text-gray-700">
-                      {finding.content || finding}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-            */}
+               {trip.researchFindings && trip.researchFindings.length > 0 ? (
+                 trip.researchFindings.map((finding, i) => (
+                    <CollapsibleCard key={i} title={finding.category} className="w-full">
+                       <div className="text-sm text-gray-700 markdown-content">
+                         <ReactMarkdown>{finding.content}</ReactMarkdown>
+                       </div>
+                    </CollapsibleCard>
+                 ))
+               ) : (
+                 <Card>
+                   <p className="text-sm text-gray-500 italic text-center py-4">
+                     No research findings yet.<br/>
+                     Ask the AI Assistant to "research museums" or "find hotels" to populate this section.
+                   </p>
+                 </Card>
+               )}
+            </div>
           </div>
         )}
 
