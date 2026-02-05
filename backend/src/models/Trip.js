@@ -37,6 +37,10 @@ const tripSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  isResearching: {
+    type: Boolean,
+    default: false
+  },
   messages: [{
     text: {
       type: String,
@@ -45,7 +49,15 @@ const tripSchema = new mongoose.Schema({
     user: {
       type: mongoose.Schema.ObjectId,
       ref: 'User',
-      required: true
+      // required: true - Removed to allow AI messages
+    },
+    senderType: {
+      type: String,
+      enum: ['user', 'ai'],
+      default: 'user'
+    },
+    senderName: {
+      type: String
     },
     likes: [{
       type: mongoose.Schema.ObjectId,

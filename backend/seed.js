@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const Trip = require('./models/Trip');
-const Item = require('./models/Item');
-const User = require('./models/User');
+const Trip = require('./src/models/Trip');
+const Item = require('./src/models/Item');
+const User = require('./src/models/User');
 
 // Load env vars
 dotenv.config();
