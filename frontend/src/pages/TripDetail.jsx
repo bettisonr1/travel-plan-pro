@@ -7,6 +7,7 @@ import CollapsibleCard from '../components/CollapsibleCard';
 import Button from '../components/Button';
 import ManageUsersModal from '../components/ManageUsersModal';
 import TripChat from '../components/TripChat';
+import TripModal from '../components/TripModal';
 
 const TripDetail = () => {
   const { id } = useParams();
@@ -16,8 +17,55 @@ const TripDetail = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [isManageUsersOpen, setIsManageUsersOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [streamingResearch, setStreamingResearch] = useState({ findings: [], summary: '' });
   const fileInputRef = useRef(null);
+
+  const handleResearchStream = (data) => {
+    setStreamingResearch(prev => {
+        if (data.type === 'token') {
+            if (data.isSummary) {
+                return { ...prev, summary: prev.summary + data.content };
+            }
+            
+            if (data.category) {
+                const findings = [...prev.findings];
+                const index = findings.findIndex(f => f.category === data.category);
+                
+                if (index >= 0) {
+                    findings[index] = { 
+                        ...findings[index], 
+                        content: findings[index].content + data.content 
+                    };
+                } else {
+                    findings.push({ category: data.category, content: data.content });
+                }
+                return { ...prev, findings };
+            }
+        }
+        return prev;
+    });
+  };
+
+  useEffect(() => {
+      if (trip && !trip.isResearching) {
+          setStreamingResearch({ findings: [], summary: '' });
+      }
+  }, [trip]);
+
+  // Merge findings for display
+  const displayFindings = trip ? [...(trip.researchFindings || [])] : [];
+  streamingResearch.findings.forEach(streamItem => {
+      const index = displayFindings.findIndex(f => f.category === streamItem.category);
+      if (index >= 0) {
+          displayFindings[index] = streamItem;
+      } else {
+          displayFindings.push(streamItem);
+      }
+  });
+  
+  const displaySummary = streamingResearch.summary || trip?.researchSummary;
 
   useEffect(() => {
     const fetchTrip = async () => {
@@ -60,6 +108,19 @@ const TripDetail = () => {
       }
     } catch (error) {
       console.error('Failed to remove user', error);
+    }
+  };
+
+  const handleUpdateTrip = async (updatedData) => {
+    try {
+        const response = await tripService.update(trip._id, updatedData);
+        if (response.success) {
+            setTrip(response.data);
+            setIsEditModalOpen(false);
+        }
+    } catch (error) {
+        console.error('Failed to update trip', error);
+        alert('Failed to update trip');
     }
   };
 
@@ -147,9 +208,12 @@ const TripDetail = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex justify-start">
+      <div className="flex justify-between items-center">
         <Button onClick={() => navigate('/')} variant="secondary">
           Back to Trips
+        </Button>
+        <Button onClick={() => setIsEditModalOpen(true)} variant="outline">
+          Edit Trip
         </Button>
       </div>
 
@@ -210,7 +274,7 @@ const TripDetail = () => {
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          {['Overview', 'Attendees', 'AI Assistant', 'To-Do List', 'Message Board'].map((tab) => {
+          {['Overview', 'Attendees', 'AI Assistant', 'Itinerary', 'Message Board'].map((tab) => {
             const tabKey = tab.toLowerCase().replace(/\s+/g, '-');
             return (
               <button
@@ -244,18 +308,21 @@ const TripDetail = () => {
                 <h3 className="text-sm font-medium text-gray-500">Description</h3>
                 <p className="mt-1 text-gray-900">{trip.description || 'No description provided.'}</p>
               </div>
-              {trip.pointsOfInterest && trip.pointsOfInterest.length > 0 && (
-                <div className="md:col-span-2">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Categories</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {trip.pointsOfInterest.map((category) => (
-                      <span key={category} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {category}
-                      </span>
-                    ))}
-                  </div>
+            {/* Categories Section - Always visible now per user request */}
+            <div className="md:col-span-2">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Points of Interest</h3>
+              {trip.pointsOfInterest && trip.pointsOfInterest.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {trip.pointsOfInterest.map((category) => (
+                    <span key={category} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {category}
+                    </span>
+                  ))}
                 </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic">No categories selected.</p>
               )}
+            </div>
             </div>
           </Card>
         )}
@@ -298,6 +365,7 @@ const TripDetail = () => {
                 currentUser={JSON.parse(localStorage.getItem('user'))} 
                 onTripUpdate={setTrip} 
                 initialMessages={trip.messages}
+                onResearchStream={handleResearchStream}
               />
             </div>
             <div className="lg:col-span-1 space-y-4 h-[600px] overflow-y-auto pr-2">
@@ -308,16 +376,16 @@ const TripDetail = () => {
                   )}
                </div>
                
-               {trip.researchSummary && (
+               {displaySummary && (
                  <Card title="Executive Summary">
                    <div className="prose prose-sm max-w-none text-gray-800">
-                     <ReactMarkdown>{trip.researchSummary}</ReactMarkdown>
+                     <ReactMarkdown>{displaySummary}</ReactMarkdown>
                    </div>
                  </Card>
                )}
 
-               {trip.researchFindings && trip.researchFindings.length > 0 ? (
-                 trip.researchFindings.map((finding, i) => (
+               {displayFindings && displayFindings.length > 0 ? (
+                 displayFindings.map((finding, i) => (
                     <CollapsibleCard key={i} title={finding.category} className="w-full">
                        <div className="text-sm text-gray-700 markdown-content">
                          <ReactMarkdown>{finding.content}</ReactMarkdown>
@@ -336,11 +404,23 @@ const TripDetail = () => {
           </div>
         )}
 
-        {activeTab === 'to-do-list' && (
-          <Card>
-            <div className="text-center py-10 text-gray-500">
-              <p>TODO list of activities to complete before the trip.</p>
-              <p className="text-sm mt-2">(Feature coming soon)</p>
+        {activeTab === 'itinerary' && (
+          <Card title="Itinerary">
+            <div className="space-y-4">
+              {trip.itinerary && trip.itinerary.length > 0 ? (
+                trip.itinerary.map((item, idx) => (
+                    <div key={idx} className="border-l-4 border-blue-500 pl-4 py-2 bg-gray-50 rounded-r-md">
+                        <div className="flex justify-between">
+                            <h4 className="font-bold text-gray-900">{item.title}</h4>
+                            {item.date && <span className="text-xs text-gray-500">{new Date(item.date).toLocaleDateString()}</span>}
+                        </div>
+                        {item.location && <p className="text-sm text-gray-600 mb-1">📍 {item.location}</p>}
+                        <p className="text-sm text-gray-700">{item.description}</p>
+                    </div>
+                ))
+              ) : (
+                  <p className="text-gray-500 italic">No itinerary items yet. Ask the AI agent to add some!</p>
+              )}
             </div>
           </Card>
         )}
@@ -361,6 +441,13 @@ const TripDetail = () => {
         trip={trip}
         onAddUser={handleAddUser}
         onRemoveUser={handleRemoveUser}
+      />
+
+      <TripModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleUpdateTrip}
+        trip={trip}
       />
     </div>
   );

@@ -5,10 +5,11 @@ const { MongoDBSaver } = require("@langchain/langgraph-checkpoint-mongodb");
 const { MongoClient } = require("mongodb");
 
 const { 
-  updateTripCategories, 
+  updatePointsOfInterest, 
   addUserToTrip, 
   postToMessageBoard, 
-  startDeepResearch 
+  startDeepResearch,
+  addItineraryItem
 } = require("./tools/chatTools");
 
 // Also include basic trip tools if useful
@@ -16,10 +17,11 @@ const { searchTrips, createTrip, updateTrip } = require("./tools/tripTools");
 
 // Combine tools
 const tools = [
-  updateTripCategories, 
+  updatePointsOfInterest, 
   addUserToTrip, 
   postToMessageBoard, 
   startDeepResearch,
+  addItineraryItem,
   // searchTrips, // Maybe not needed for context of single trip chat
   // updateTrip // Could be useful
 ];

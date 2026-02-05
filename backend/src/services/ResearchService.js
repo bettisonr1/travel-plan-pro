@@ -11,23 +11,96 @@ const startResearchJob = async (tripId, destination, categories) => {
       categories
     };
 
-    // Invoke the research graph
-    const result = await graph.invoke(inputs);
+    const io = getIO();
+    const room = `trip_${tripId}`;
+
+    // Invoke the research graph with streaming
+    const stream = await graph.streamEvents(inputs, {
+        version: "v2"
+    });
+
+    // Accumulated results to save later
+    let researchResults = [];
+    let summaryResult = '';
+
+    // Initialize/reset existing research findings in DB or just append?
+    // For deep research, usually we might want to clear previous or append.
+    // The previous implementation replaced them.
+    // Let's stick to replacing for this specific "session" but maybe we should preserve?
+    // The requirement implies "adding a suggestion", but here we are doing "research".
+    // I'll stick to the previous behavior of updating the trip at the end, but streaming progress.
+
+    for await (const event of stream) {
+      // Filter for LLM streaming events to send token by token
+      if (event.event === "on_chat_model_stream") {
+          const chunk = event.data.chunk;
+          if (chunk && chunk.content) {
+              // Extract category from metadata if available
+              const category = event.metadata?.category;
+              const isSummary = event.metadata?.type === 'summary' || (event.tags && event.tags.includes('summary'));
+              
+              // Emit streaming event to frontend
+              io.to(room).emit('research_stream', {
+                  tripId,
+                  type: 'token',
+                  content: chunk.content,
+                  category: category,
+                  isSummary: isSummary
+              });
+          }
+      }
+      
+      // Capture completed output for DB save
+      if (event.event === "on_chain_end" && event.name === "researcher") {
+          if (event.data.output && event.data.output.research) {
+             event.data.output.research.forEach(content => {
+                 const match = content.match(/^###\s+(.*?)(\n|$)/);
+                 const category = match ? match[1].trim() : (event.metadata?.category || 'General');
+                 
+                 // Update our accumulator
+                 const existingIndex = researchResults.findIndex(r => r.category === category);
+                 if (existingIndex >= 0) {
+                     researchResults[existingIndex].content = content;
+                 } else {
+                     researchResults.push({ category, content });
+                 }
+                 
+                 // Emit completion for this node
+                 io.to(room).emit('research_stream', {
+                    tripId,
+                    type: 'node_complete',
+                    category: category,
+                    content: content
+                 });
+             });
+          }
+      }
+
+      if (event.event === "on_chain_end" && event.name === "summariser") {
+          if (event.data.output && event.data.output.summary) {
+              summaryResult = event.data.output.summary;
+              
+              io.to(room).emit('research_stream', {
+                tripId,
+                type: 'summary_complete',
+                content: summaryResult
+             });
+          }
+      }
+    }
     
-    // Process results
-    // result.research is array of strings (markdown)
-    // result.summary is string
-    
-    const researchFindings = result.research.map((content, index) => ({
-        category: categories[index] || "General",
-        content: content
-    }));
+    // Process results for DB
+    // If researchResults is empty (e.g. only summary?), check inputs
+    if (researchResults.length === 0 && inputs.categories.length > 0) {
+        // Fallback if event capturing failed?
+        // Usually on_chain_end works.
+    }
 
     // Update Trip
     const updatedTrip = await Trip.findByIdAndUpdate(tripId, {
       $set: {
-        researchFindings: researchFindings,
-        researchSummary: result.summary,
+        researchFindings: researchResults,
+        researchSummary: summaryResult,
         isResearching: false
       },
       $push: {
@@ -39,18 +112,13 @@ const startResearchJob = async (tripId, destination, categories) => {
       }
     }, { new: true });
 
-    // Notify via Socket
-    try {
-      const io = getIO();
-      io.to(`trip_${tripId}`).emit('trip_data_updated', updatedTrip);
-      io.to(`trip_${tripId}`).emit('new_message', {
+    // Notify via Socket (Standard update)
+    io.to(room).emit('trip_data_updated', updatedTrip);
+    io.to(room).emit('new_message', {
         sender: 'ai',
         userName: 'Travel Agent',
         content: `Research complete for ${categories.join(', ')}! I've updated the Research tab with my findings.`
-      });
-    } catch (socketErr) {
-      console.warn("Could not emit socket event:", socketErr.message);
-    }
+    });
 
     console.log(`[ResearchJob] Completed for Trip: ${tripId}`);
 
@@ -71,6 +139,7 @@ const startResearchJob = async (tripId, destination, categories) => {
     try {
         const io = getIO();
         io.to(`trip_${tripId}`).emit('trip_data_updated');
+        io.to(`trip_${tripId}`).emit('research_error', { message: error.message });
     } catch (e) {}
   }
 };

@@ -192,6 +192,20 @@ const MyTrips = () => {
                         <p className="text-sm text-gray-500">
                            {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
                         </p>
+                        {trip.pointsOfInterest && trip.pointsOfInterest.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {trip.pointsOfInterest.slice(0, 3).map((category, idx) => (
+                              <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                {category}
+                              </span>
+                            ))}
+                            {trip.pointsOfInterest.length > 3 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                +{trip.pointsOfInterest.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center">

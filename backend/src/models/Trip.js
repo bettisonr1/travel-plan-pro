@@ -74,6 +74,15 @@ const tripSchema = new mongoose.Schema({
       ref: 'User',
     },
   ],
+  itinerary: [{
+    day: Number, // 1, 2, 3... or Date
+    date: Date,
+    title: String,
+    description: String,
+    location: String,
+    startTime: String,
+    endTime: String
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

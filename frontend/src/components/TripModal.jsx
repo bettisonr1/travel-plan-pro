@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from './Button';
 import tripService from '../services/tripService';
 
@@ -7,7 +7,7 @@ const CATEGORIES = [
   'Nature', 'History', 'Shopping', 'Entertainment'
 ];
 
-const TripModal = ({ isOpen, onClose, onSubmit }) => {
+const TripModal = ({ isOpen, onClose, onSubmit, trip }) => {
   const [formData, setFormData] = useState({
     destination: '',
     startDate: '',
@@ -21,6 +21,35 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
   const [activeTab, setActiveTab] = useState('create');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (trip) {
+        setFormData({
+          destination: trip.destination || '',
+          startDate: trip.startDate ? new Date(trip.startDate).toISOString().split('T')[0] : '',
+          endDate: trip.endDate ? new Date(trip.endDate).toISOString().split('T')[0] : '',
+          description: trip.description || '',
+          pointsOfInterest: trip.pointsOfInterest || [],
+          color: trip.color || '#3B82F6',
+          thumbnailUrl: trip.thumbnailUrl || '',
+        });
+        setActiveTab('advanced');
+      } else {
+        setFormData({
+          destination: '',
+          startDate: '',
+          endDate: '',
+          description: '',
+          pointsOfInterest: [],
+          color: '#3B82F6',
+          thumbnailUrl: '',
+        });
+        setFreeformInput('');
+        setActiveTab('create');
+      }
+    }
+  }, [isOpen, trip]);
 
   if (!isOpen) return null;
 
@@ -102,7 +131,7 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
         <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
           {/* Header */}
           <div className="flex items-start justify-between p-5 border-b border-solid border-gray-300 rounded-t">
-            <h3 className="text-2xl font-semibold">New Trip</h3>
+            <h3 className="text-2xl font-semibold">{trip ? 'Edit Trip' : 'New Trip'}</h3>
             <button
               className="p-1 ml-auto bg-transparent border-0 text-black float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
               onClick={onClose}
@@ -303,7 +332,7 @@ const TripModal = ({ isOpen, onClose, onSubmit }) => {
                 </Button>
                 {activeTab === 'advanced' && (
                     <Button type="submit" variant="primary">
-                      Create Trip
+                      {trip ? 'Update Trip' : 'Create Trip'}
                     </Button>
                 )}
               </div>

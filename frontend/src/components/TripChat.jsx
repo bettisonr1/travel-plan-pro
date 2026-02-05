@@ -4,7 +4,7 @@ import Button from './Button';
 import ReactMarkdown from 'react-markdown';
 import Card from './Card';
 
-const TripChat = ({ tripId, currentUser, onTripUpdate, initialMessages = [] }) => {
+const TripChat = ({ tripId, currentUser, onTripUpdate, initialMessages = [], onResearchStream }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isConnected, setIsConnected] = useState(false);
@@ -90,6 +90,12 @@ const TripChat = ({ tripId, currentUser, onTripUpdate, initialMessages = [] }) =
         content: `Error: ${err.message}`, 
         isError: true 
       }]);
+    });
+
+    socketInstance.on('research_stream', (data) => {
+      if (onResearchStream) {
+        onResearchStream(data);
+      }
     });
 
     setSocket(socketInstance);

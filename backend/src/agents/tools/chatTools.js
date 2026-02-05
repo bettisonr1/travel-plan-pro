@@ -5,27 +5,31 @@ const User = require("../../models/User");
 const { startResearchJob } = require("../../services/ResearchService");
 
 /**
- * Update the research categories for the trip.
+ * Update or add points of interest for the trip.
  */
-const updateTripCategories = tool(
-  async ({ tripId, categories }) => {
-    console.log(`[updateTripCategories] Invoked for tripId: ${tripId} with categories:`, categories);
+const updatePointsOfInterest = tool(
+  async ({ tripId, pointsOfInterest }) => {
+    console.log(`[updatePointsOfInterest] Invoked for tripId: ${tripId} with points:`, pointsOfInterest);
     try {
-      // We update the categories by creating placeholder researchFindings if they don't exist
-      // or just assuming the research tool will fill them later.
-      // For now, let's just confirm the intent.
-      return `Updated research focus to: ${categories.join(", ")}.`;
+      const trip = await Trip.findByIdAndUpdate(
+        tripId, 
+        { $addToSet: { pointsOfInterest: { $each: pointsOfInterest } } },
+        { new: true }
+      );
+      
+      console.log(`[updatePointsOfInterest] Updated points of interest for trip ${tripId}`);
+      return `Updated points of interest. Current list: ${trip.pointsOfInterest.join(", ")}.`;
     } catch (error) {
-      console.error(`[updateTripCategories] Error:`, error);
-      return `Error updating categories: ${error.message}`;
+      console.error(`[updatePointsOfInterest] Error:`, error);
+      return `Error updating points of interest: ${error.message}`;
     }
   },
   {
-    name: "update_trip_categories",
-    description: "Update the research categories/topics for the trip (e.g., 'Museums', 'Nightlife').",
+    name: "update_points_of_interest",
+    description: "Update or add points of interest for the trip (e.g., 'Museums', 'Nightlife').",
     schema: z.object({
       tripId: z.string().describe("The unique MongoDB ID of the trip (e.g., '65a1b2c3d4e5f6...'). Do NOT use the trip name."),
-      categories: z.array(z.string()).describe("List of category names")
+      pointsOfInterest: z.array(z.string()).describe("List of points of interest to add")
     })
   }
 );
@@ -132,9 +136,48 @@ const startDeepResearch = tool(
   }
 );
 
+
+/**
+ * Add an item to the trip itinerary.
+ */
+const addItineraryItem = tool(
+  async ({ tripId, title, description, location, date }) => {
+    console.log(`[addItineraryItem] Invoked for tripId: ${tripId}, title: ${title}`);
+    try {
+      await Trip.findByIdAndUpdate(tripId, {
+        $push: {
+          itinerary: {
+            title,
+            description,
+            location,
+            date: date ? new Date(date) : null
+          }
+        }
+      });
+      return `Added "${title}" to the itinerary.`;
+    } catch (error) {
+      console.error(`[addItineraryItem] Error:`, error);
+      return `Error adding item: ${error.message}`;
+    }
+  },
+  {
+    name: "add_itinerary_item",
+    description: "Add a specific activity or item to the trip itinerary. Use this when the user accepts a suggestion or asks to add something to the schedule.",
+    schema: z.object({
+      tripId: z.string(),
+      title: z.string().describe("Title of the activity"),
+      description: z.string().optional(),
+      location: z.string().optional(),
+      date: z.string().optional().describe("Date of the activity (YYYY-MM-DD)")
+    })
+  }
+);
+
+
 module.exports = {
-  updateTripCategories,
+  updatePointsOfInterest,
   addUserToTrip,
   postToMessageBoard,
-  startDeepResearch
+  startDeepResearch,
+  addItineraryItem
 };

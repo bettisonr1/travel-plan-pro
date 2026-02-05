@@ -28,36 +28,42 @@ const trips = [
     startDate: new Date('2024-05-01'),
     endDate: new Date('2024-05-10'),
     description: 'A romantic trip to the City of Light, visiting the Eiffel Tower and Louvre.',
+    pointsOfInterest: ['Culture', 'Food & Drink', 'History'],
   },
   {
     destination: 'Tokyo, Japan',
     startDate: new Date('2024-10-15'),
     endDate: new Date('2024-10-25'),
     description: 'Exploring the neon streets of Shinjuku and ancient temples in Kyoto.',
+    pointsOfInterest: ['Adventure', 'Culture', 'Shopping'],
   },
   {
     destination: 'New York City, USA',
     startDate: new Date('2025-01-05'),
     endDate: new Date('2025-01-12'),
     description: 'Broadway shows, Central Park walks, and plenty of pizza.',
+    pointsOfInterest: ['Entertainment', 'Food & Drink'],
   },
   {
     destination: 'London, UK',
     startDate: new Date('2026-03-10'),
     endDate: new Date('2026-03-17'),
     description: 'Visiting the British Museum and enjoying afternoon tea.',
+    pointsOfInterest: ['History', 'Culture'],
   },
   {
     destination: 'Rome, Italy',
     startDate: new Date('2026-06-20'),
     endDate: new Date('2026-06-30'),
     description: 'Exploring the Colosseum and Vatican City.',
+    pointsOfInterest: ['History', 'Food & Drink'],
   },
   {
     destination: 'Sydney, Australia',
     startDate: new Date('2026-12-15'),
     endDate: new Date('2026-12-28'),
     description: 'Summer Christmas by the beach and fireworks at the harbour.',
+    pointsOfInterest: ['Nature', 'Relaxation'],
   },
 ];
 
