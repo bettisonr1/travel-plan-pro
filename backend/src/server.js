@@ -95,40 +95,58 @@ io.on('connection', (socket) => {
       Existing Research Categories: ${trip.researchFindings.map(f => f.category).join(', ') || 'None'}
       `;
 
-      const config = { configurable: { thread_id: threadId } };
+      const config = { configurable: { thread_id: threadId }, version: 'v2' };
       
-      const response = await tripChatAgent.invoke(
-        { 
-            messages: [
-                new SystemMessage(context),
-                new HumanMessage({
-                    content: message,
-                    name: userName ? userName.replace(/[^a-zA-Z0-9_-]/g, '_') : undefined
-                })
-            ] 
-        },
-        config
-      );
+      const inputs = { 
+          messages: [
+              new SystemMessage(context),
+              new HumanMessage({
+                  content: message,
+                  name: userName ? userName.replace(/[^a-zA-Z0-9_-]/g, '_') : undefined
+              })
+          ] 
+      };
 
-      const lastMessage = response.messages[response.messages.length - 1];
+      // Emit thinking event
+      io.to(`trip_${threadId}`).emit('agent_thinking');
+
+      let fullResponseText = "";
       
-      // 4. Save AI Response to MongoDB
-      await Trip.findByIdAndUpdate(tripId, {
-        $push: {
-            messages: {
-                text: lastMessage.content,
-                senderType: 'ai',
-                senderName: 'Travel Agent'
+      const eventStream = await tripChatAgent.streamEvents(inputs, config);
+
+      for await (const event of eventStream) {
+          const eventType = event.event;
+          if (eventType === 'on_chat_model_stream') {
+              const content = event.data.chunk.content;
+              if (typeof content === 'string' && content.length > 0) {
+                  fullResponseText += content;
+                  io.to(`trip_${threadId}`).emit('agent_response_chunk', { 
+                      content,
+                      tripId 
+                  });
+              }
+          }
+      }
+
+      // 4. Save AI Response to MongoDB & Emit Final Message
+      if (fullResponseText.trim()) {
+        await Trip.findByIdAndUpdate(tripId, {
+            $push: {
+                messages: {
+                    text: fullResponseText,
+                    senderType: 'ai',
+                    senderName: 'Travel Agent'
+                }
             }
-        }
-      });
+        });
 
-      // 5. Broadcast AI Response
-      io.to(`trip_${threadId}`).emit('new_message', {
-        sender: 'ai',
-        userName: 'Travel Agent',
-        content: lastMessage.content
-      });
+        // Broadcast AI Response
+        io.to(`trip_${threadId}`).emit('new_message', {
+            sender: 'ai',
+            userName: 'Travel Agent',
+            content: fullResponseText
+        });
+      }
 
       // If tools were used that updated the trip, emit update event
       // (The tools themselves might emit, but we can also do it here if needed)

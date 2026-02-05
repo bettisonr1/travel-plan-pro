@@ -43,7 +43,39 @@ const TripChat = ({ tripId, currentUser, onTripUpdate, initialMessages = [] }) =
     });
 
     socketInstance.on('new_message', (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => {
+        const lastMsg = prev[prev.length - 1];
+        // If we have a streaming message and this is the final AI message, replace it
+        if (lastMsg && lastMsg._id === 'streaming-ai-msg' && msg.sender === 'ai') {
+            return [...prev.slice(0, -1), msg];
+        }
+        return [...prev, msg];
+      });
+    });
+
+    socketInstance.on('agent_thinking', () => {
+      setMessages((prev) => [...prev, { 
+        sender: 'ai', 
+        userName: 'Travel Agent', 
+        content: 'Thinking...', 
+        isThinking: true,
+        _id: 'streaming-ai-msg'
+      }]);
+    });
+
+    socketInstance.on('agent_response_chunk', (data) => {
+      setMessages((prev) => {
+        const lastMsg = prev[prev.length - 1];
+        if (lastMsg && lastMsg._id === 'streaming-ai-msg') {
+            const newContent = lastMsg.isThinking ? data.content : lastMsg.content + data.content;
+            return [...prev.slice(0, -1), { 
+                ...lastMsg, 
+                content: newContent, 
+                isThinking: false 
+            }];
+        }
+        return prev;
+      });
     });
 
     socketInstance.on('trip_data_updated', (updatedTrip) => {
@@ -144,7 +176,7 @@ const TripChat = ({ tripId, currentUser, onTripUpdate, initialMessages = [] }) =
                   </div>
                 )}
                 
-                <div className={`text-sm ${isMe ? 'text-blue-50' : 'text-gray-700'} markdown-content`}>
+                <div className={`text-sm ${isMe ? 'text-blue-50' : 'text-gray-700'} markdown-content ${msg.isThinking ? 'animate-pulse italic opacity-75' : ''}`}>
                   {isAI ? (
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                   ) : (
