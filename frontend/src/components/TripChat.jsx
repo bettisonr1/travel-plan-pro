@@ -76,13 +76,22 @@ const TripChat = ({ tripId, currentUser, onTripUpdate, initialMessages = [] }) =
     e.preventDefault();
     if (!input.trim() || !socket) return;
 
-    // Emit message
-    socket.emit('chat_message', {
+    const msgData = {
       tripId,
       message: input,
       userName: currentUser?.firstname || 'User', // Use first name or fallback
       userId: currentUser?._id // If available
-    });
+    };
+
+    // Optimistically add message to UI
+    setMessages((prev) => [...prev, {
+      sender: 'user',
+      content: input,
+      userName: msgData.userName,
+    }]);
+
+    // Emit message
+    socket.emit('chat_message', msgData);
 
     setInput('');
   };
